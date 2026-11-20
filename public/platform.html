@@ -44,7 +44,7 @@
     <div class="logo">S</div>
     <div>
       <h1>SiteFlow – Platform Explanation</h1>
-      <p>Tum.ai Construction Hack · Challenge B · last updated 20 Nov 2026 (open-source AI) · <span id="ver">v0.2</span></p>
+      <p>Tum.ai Construction Hack · Challenge B · last updated 20 Nov 2026 (open-source AI) · <span id="ver">v0.3</span></p>
     </div>
   </div>
 </header>
@@ -155,7 +155,7 @@
 
   <section id="features">
     <h2>5. Features by screen</h2>
-    <p>The app has four tabs. A persona switch and a "Reset demo" button sit in the header.</p>
+    <p>The app has four tabs: across the top on desktop, and as a bottom tab bar on phones. A persona switch sits in the header. On desktop the header also has "Open on phone" (a QR code to open the app on a phone) and "Reset demo"; on phones, Reset is at the bottom of the page. The app can be added to the phone home screen.</p>
     <h3>Today (the main working screen)</h3>
     <ul>
       <li><strong>Capture a site situation:</strong> a large record button for voice (German or English), a text box, photo upload and one-click demo phrases.</li>
@@ -169,7 +169,7 @@
     </ul>
     <h3>Plan</h3>
     <ul>
-      <li>Two-week Gantt chart (Mon 23 Nov – Fri 4 Dec 2026) grouped by team, with crew size, readiness warnings, milestone markers, delays striped red and blocked tasks outlined.</li>
+      <li>Two-week Gantt chart (Mon 23 Nov – Fri 4 Dec 2026) grouped by team, with crew size, readiness warnings, milestone markers, delays striped red and blocked tasks outlined. On phones a list view (dates, crew, status, open items) is the default, with the timeline one tap away.</li>
       <li>Click a task to see readiness details and change it.</li>
     </ul>
     <h3>Diary</h3>
@@ -347,6 +347,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
     <p>Add a row whenever the platform or this document changes. Newest first.</p>
     <table>
       <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+      <tr><td>21 Nov 2026</td><td>v0.3</td><td>Mobile-friendly: bottom tab bar on phones, larger touch targets, 16 px inputs (no iOS zoom), camera and gallery photo buttons, list view of the plan on phones, re-plan scrolls into view, "Open on phone" QR code, installable to the home screen. Live app switched to Groq (llama-3.1-8b-instant + qwen/qwen3.8-27b)</td></tr>
       <tr><td>20 Nov 2026</td><td>v0.2</td><td>Open-source AI: any OpenAI-compatible endpoint (Ollama, Groq …), default Qwen3-VL 4B for notes and photos; photo understanding (<code>/api/vision</code>) feeding notes and notices; Claude now optional</td></tr>
       <tr><td>20 Nov 2026</td><td>v0.1</td><td>First MVP deployed to Vercel; platform explanation created</td></tr>
     </table>

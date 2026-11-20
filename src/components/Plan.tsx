@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { milestoneSlips, schedule } from "@/lib/engine";
-import { dayShort } from "@/lib/dates";
+import { dayLabel, dayShort } from "@/lib/dates";
 import { MILESTONES, TEAMS } from "@/lib/seed";
 import { TaskEditor } from "./TaskEditor";
 import { Badge, Card } from "./ui";
@@ -13,6 +13,11 @@ const DAYS = Array.from({ length: 10 }, (_, i) => i);
 export function Plan() {
   const { tasks, today, persona } = useStore();
   const [sel, setSel] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "timeline">("list"); // phones only; desktop always shows the timeline
+  const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (sel) detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [sel]);
   const sched = schedule(tasks);
   const slips = milestoneSlips(tasks, sched);
   const selected = tasks.find((t) => t.id === sel);
@@ -31,7 +36,54 @@ export function Plan() {
           </div>
         }
       >
-        <div className="overflow-x-auto">
+        <div className="mb-3 flex rounded-lg bg-stone-100 p-0.5 text-sm sm:hidden">
+          {(["list", "timeline"] as const).map((v) => (
+            <button key={v} onClick={() => setView(v)} className={`flex-1 rounded-md py-1.5 ${view === v ? "bg-white font-semibold shadow-sm" : "text-stone-500"}`}>
+              {v === "list" ? "List" : "Timeline"}
+            </button>
+          ))}
+        </div>
+
+        {/* Phone list view */}
+        <div className={`space-y-4 sm:hidden ${view === "list" ? "" : "hidden"}`}>
+          {TEAMS.map((team) => (
+            <div key={team.id}>
+              <p className="mb-1 flex items-center gap-2 text-xs font-semibold text-stone-600">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: team.color }} />
+                {team.name} · {team.company} {persona === team.id && <Badge tone="amber">you</Badge>}
+              </p>
+              <ul className="divide-y divide-stone-100 rounded-lg border border-stone-200">
+                {tasks
+                  .filter((t) => t.team === team.id)
+                  .sort((a, b) => sched[a.id].es - sched[b.id].es)
+                  .map((t) => {
+                    const open = Object.values(t.readiness).filter((r) => r?.state === "open").length;
+                    return (
+                      <li key={t.id}>
+                        <button onClick={() => setSel(t.id)} className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left ${sel === t.id ? "bg-amber-50" : ""}`}>
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-medium text-stone-900">
+                              {t.name} {t.section} {t.milestone && <span className="text-amber-600">◆</span>}
+                            </span>
+                            <span className="text-xs text-stone-500">
+                              {dayLabel(sched[t.id].es)} – {dayLabel(sched[t.id].ef)} · {t.crew} workers
+                              {t.delayDays ? ` · +${t.delayDays}d delay` : ""}
+                            </span>
+                          </span>
+                          <span className="flex shrink-0 flex-col items-end gap-1">
+                            <Badge tone={t.status === "blocked" ? "red" : t.status === "done" ? "green" : t.status === "in-progress" ? "blue" : "stone"}>{t.status}</Badge>
+                            {open > 0 && <span className="text-xs text-red-600">⚠ {open} open</span>}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className={`overflow-x-auto sm:block ${view === "timeline" ? "" : "hidden"}`}>
           <div className="min-w-[760px]">
             <div className="grid grid-cols-[220px_repeat(10,1fr)] border-b border-stone-200 pb-1 text-center text-xs text-stone-500">
               <div className="text-left">Task</div>
@@ -112,12 +164,14 @@ export function Plan() {
             </div>
           </div>
         </div>
-        <p className="mt-3 text-xs text-stone-500">Click a task to see readiness and change it. Striped red = delay. Red outline = blocked. ⚠ = open readiness items.</p>
+        <p className="mt-3 text-xs text-stone-500">Tap a task to see readiness and change it. Striped red = delay. Red outline = blocked. ⚠ = open readiness items.</p>
       </Card>
       {selected && (
-        <Card title="Task details">
+        <div ref={detailRef} className="scroll-mt-28">
+        <Card title="Task details" right={<button onClick={() => setSel(null)} className="text-sm text-stone-500">✕</button>}>
           <TaskEditor key={selected.id + selected.plannedStart + selected.duration + selected.status} task={selected} />
         </Card>
+        </div>
       )}
     </div>
   );

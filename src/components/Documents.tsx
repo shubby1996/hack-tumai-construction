@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useStore } from "@/lib/store";
 import { schedule } from "@/lib/engine";
 import { clock } from "@/lib/dates";
@@ -15,6 +16,17 @@ export function Documents({ toast }: { toast: (m: string) => void }) {
   const addNotice = useStore((s) => s.addNotice);
   const sel = notices.find((n) => n.id === selectedNoticeId) ?? notices[0];
   const isSM = persona === "site-manager";
+  const editorRef = useRef<HTMLDivElement>(null);
+  const pick = (id: string) => {
+    select(id);
+    // On phones the editor sits below the list: bring it into view.
+    if (window.innerWidth < 1024) setTimeout(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
+  useEffect(() => {
+    if (selectedNoticeId && window.innerWidth < 1024) editorRef.current?.scrollIntoView({ block: "start" });
+    // run once on open, when a draft was just created elsewhere
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="grid gap-4 lg:grid-cols-5">
@@ -37,7 +49,7 @@ export function Documents({ toast }: { toast: (m: string) => void }) {
         <ul className="space-y-2">
           {notices.map((n) => (
             <li key={n.id}>
-              <button onClick={() => select(n.id)} className={`w-full rounded-lg border p-3 text-left ${sel?.id === n.id ? "border-amber-400 bg-amber-50" : "border-stone-200 hover:bg-stone-50"}`}>
+              <button onClick={() => pick(n.id)} className={`w-full rounded-lg border p-3 text-left ${sel?.id === n.id ? "border-amber-400 bg-amber-50" : "border-stone-200 hover:bg-stone-50"}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-stone-900">{n.title}</span>
                   <Badge tone={n.status === "approved" ? "green" : "amber"}>{n.status}</Badge>
@@ -54,9 +66,9 @@ export function Documents({ toast }: { toast: (m: string) => void }) {
         </ul>
       </Card>
 
+      <div ref={editorRef} className="scroll-mt-28 lg:col-span-3">
       <Card
         title={sel ? sel.title : "Preview"}
-        className="lg:col-span-3"
         right={
           sel && (
             <div className="flex flex-wrap gap-2">
@@ -83,11 +95,12 @@ export function Documents({ toast }: { toast: (m: string) => void }) {
               value={sel.body}
               readOnly={sel.status !== "draft"}
               onChange={(e) => update(sel.id, e.target.value)}
-              className="h-[560px] w-full rounded-lg border border-stone-300 bg-stone-50 p-4 font-mono text-[13px] leading-relaxed text-stone-900 focus:border-amber-500 focus:outline-none"
+              className="h-[60vh] w-full rounded-lg border border-stone-300 bg-stone-50 p-3 font-mono text-[13px] leading-relaxed text-stone-900 focus:border-amber-500 focus:outline-none sm:p-4 lg:h-[560px]"
             />
           </>
         )}
       </Card>
+      </div>
     </div>
   );
 }

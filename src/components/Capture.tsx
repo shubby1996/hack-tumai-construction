@@ -147,7 +147,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
               onClick={() => (speech.listening ? speech.stop() : speech.start())}
               disabled={!speech.supported}
               title={speech.supported ? "Dictate" : "Speech input needs Chrome, Edge or Safari"}
-              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl shadow-md transition ${speech.listening ? "animate-pulse bg-red-600 text-white" : "bg-amber-500 text-stone-950 hover:bg-amber-400"} disabled:bg-stone-200 disabled:text-stone-400`}
+              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl shadow-md transition active:scale-95 ${speech.listening ? "animate-pulse bg-red-600 text-white" : "bg-amber-500 text-stone-950 hover:bg-amber-400"} disabled:bg-stone-200 disabled:text-stone-400`}
             >
               {speech.listening ? "■" : "🎙"}
             </button>
@@ -160,20 +160,26 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="cursor-pointer rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-800 hover:bg-stone-200">
-              📷 Photo{photos.length ? ` (${photos.length})` : ""}
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={async (e) => {
-                  const f = e.target.files?.[0];
-                  e.target.value = "";
-                  if (f) await addPhoto(f);
-                }}
-              />
-            </label>
+            {[
+              { label: "📷 Camera", capture: true },
+              { label: "🖼 Photo", capture: false },
+            ].map((b) => (
+              <label key={b.label} className={`${b.capture ? "sm:hidden" : ""} flex min-h-10 cursor-pointer items-center rounded-lg bg-stone-100 px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-200 sm:min-h-0 sm:py-1.5`}>
+                {b.label}
+                {!b.capture && photos.length ? ` (${photos.length})` : ""}
+                <input
+                  type="file"
+                  accept="image/*"
+                  {...(b.capture ? { capture: "environment" as const } : {})}
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) await addPhoto(f);
+                  }}
+                />
+              </label>
+            ))}
             <Button variant="primary" onClick={structure} disabled={(!text.trim() && !photoNotes.length) || busy || photos.some((p) => p.status === "analysing")}>
               {busy ? "Structuring…" : "Structure note →"}
             </Button>
@@ -253,7 +259,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Type">
               <select className={inputCls} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as EntryType })}>
                 {TYPES.map((t) => (
@@ -271,7 +277,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
                 ))}
               </select>
             </Field>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Field label="Summary">
                 <input className={inputCls} value={draft.summary} onChange={(e) => setDraft({ ...draft, summary: e.target.value })} />
               </Field>
@@ -290,8 +296,8 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
                 </Field>
               ))}
           </div>
-          <div className="flex gap-2">
-            <Button variant="primary" onClick={save}>
+          <div className="sticky bottom-16 flex gap-2 bg-white/95 py-2 sm:static sm:bottom-auto sm:py-0">
+            <Button variant="primary" onClick={save} className="flex-1 sm:flex-none">
               Save to site diary
             </Button>
             <Button variant="ghost" onClick={() => setDraft(null)}>

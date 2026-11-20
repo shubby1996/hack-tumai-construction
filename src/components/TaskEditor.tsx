@@ -79,7 +79,7 @@ export function TaskEditor({ task, onDone }: { task: Task; onDone?: () => void }
         <div className="space-y-2 rounded-lg bg-stone-50 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Change this task</p>
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-stone-600">Start</span>
+            <span className="text-stone-600">Planned start</span>
             <Button onClick={() => setShift(shift - 1)}>−1 day</Button>
             <span className="w-28 text-center font-medium">{dayLabel(Math.max(0, task.plannedStart + shift))}</span>
             <Button onClick={() => setShift(shift + 1)}>+1 day</Button>

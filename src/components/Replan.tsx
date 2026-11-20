@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useStore } from "@/lib/store";
 import { dayLabel } from "@/lib/dates";
 import { teamName } from "@/lib/engine";
@@ -9,6 +10,12 @@ export function ReplanPanel() {
   const { pending, tasks, persona } = useStore();
   const approve = useStore((s) => s.approveReplan);
   const reject = useStore((s) => s.rejectReplan);
+  const ref = useRef<HTMLDivElement>(null);
+  const pid = pending?.proposal.id;
+  useEffect(() => {
+    // Bring a new proposal into view (on phones it would otherwise be below the fold).
+    if (pid) setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  }, [pid]);
   if (!pending) return null;
   const p = pending.proposal;
   const trig = tasks.find((t) => t.id === p.triggerTaskId);
@@ -21,6 +28,7 @@ export function ReplanPanel() {
   const isSM = persona === "site-manager";
 
   return (
+    <div ref={ref} className="scroll-mt-28">
     <Card
       className="border-red-200 ring-1 ring-red-100"
       title={<span className="flex items-center gap-2">⚡ Re-plan proposal <Badge tone="red">reactive</Badge></span>}
@@ -94,5 +102,6 @@ export function ReplanPanel() {
         {!isSM && <span className="text-xs text-stone-500">Waiting for the site manager to approve.</span>}
       </div>
     </Card>
+    </div>
   );
 }

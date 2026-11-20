@@ -28,8 +28,8 @@ export function Today({ goDocs, toast }: { goDocs: () => void; toast: (m: string
             toast("Saved to the site diary");
           }}
         />
-        {last && <NextSteps entry={last} goDocs={goDocs} toast={toast} onClose={() => setLast(null)} />}
         <ReplanPanel />
+        {last && <NextSteps entry={last} goDocs={goDocs} toast={toast} onClose={() => setLast(null)} />}
         {!isSM && <MyTasks />}
       </div>
       <div className="space-y-4 lg:col-span-2">

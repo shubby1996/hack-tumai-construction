@@ -6,12 +6,12 @@ export function Card({ title, right, children, className = "" }: { title?: React
   return (
     <section className={`rounded-xl border border-stone-200 bg-white shadow-sm ${className}`}>
       {(title || right) && (
-        <header className="flex items-center justify-between gap-2 border-b border-stone-100 px-4 py-3">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 px-3 py-3 sm:px-4">
           <h2 className="text-sm font-semibold text-stone-800">{title}</h2>
           {right}
         </header>
       )}
-      <div className="p-4">{children}</div>
+      <div className="p-3 sm:p-4">{children}</div>
     </section>
   );
 }
@@ -29,7 +29,7 @@ export function Button({ variant = "secondary", className = "", ...props }: Butt
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed sm:min-h-0 sm:py-1.5 ${VARIANTS[variant]} ${className}`}
     />
   );
 }
@@ -56,4 +56,4 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
-export const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200";
+export const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-base sm:py-1.5 sm:text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200";

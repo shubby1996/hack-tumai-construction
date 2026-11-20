@@ -16,7 +16,8 @@ export interface ExtractResult {
   fields: EntryFields;
   missing: string[];
   followUpQuestion?: string;
-  engine: "claude" | "rules";
+  engine: "open" | "claude" | "rules";
+  model?: string;
 }
 
 const has = (text: string, words: string[]) => words.some((w) => text.includes(w));

@@ -33,6 +33,8 @@ const header = (to: string, day: number, subject: string) =>
 const teamCompany = (t?: Task) => (t ? TEAMS.find((x) => x.id === t.team)?.company ?? t.team : undefined);
 const taskLabel = (t?: Task) => (t ? `${t.name}, Abschnitt ${t.section}` : undefined);
 
+const photoFindings = (e: DiaryEntry) => (e.photoNotes?.length ? `\nFotobefund (automatisch erkannt, bitte prüfen): ${e.photoNotes.join(" · ")}` : "");
+
 const newId = (p: string) => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
 // ------------------------------------------------------------- reactive notices
@@ -57,7 +59,7 @@ Beginn der Behinderung: ${dayDE(entry.day)}, ${ph(f.startTime, "Uhrzeit")} Uhr
 Art und Ursache der Behinderung: ${ph(f.cause, "Ursache")}
 Verantwortlich nach unserer Kenntnis: ${ph(f.responsibleParty, "Verursacher")}
 Voraussichtliche Auswirkung: ${delay !== undefined ? `ca. ${delay} Arbeitstag(e) Verzögerung der betroffenen Leistung` : "[Dauer ergänzen]"}. ${follow} ${ms}
-Dokumentation: Bautagebucheintrag vom ${dayDE(entry.day)}, ${clock(entry.createdAt)} Uhr${entry.photos.length ? `, ${entry.photos.length} Foto(s)` : ""}.
+Dokumentation: Bautagebucheintrag vom ${dayDE(entry.day)}, ${clock(entry.createdAt)} Uhr${entry.photos.length ? `, ${entry.photos.length} Foto(s)` : ""}.${photoFindings(entry)}
 
 ${clientCaused ? "Wir bitten Sie, die Behinderung umgehend zu beseitigen und uns die hierfür erforderlichen Unterlagen bzw. Mitwirkungshandlungen unverzüglich zur Verfügung zu stellen." : "Wir bitten Sie um Kenntnisnahme."} Wir setzen die Arbeiten unverzüglich fort, sobald die hindernden Umstände wegfallen (§ 6 Abs. 3 VOB/B), und ergreifen bis dahin zumutbare Maßnahmen zur Weiterführung der Arbeiten.
 
@@ -84,7 +86,7 @@ Festgestellte Abweichung: ${ph(f.cause, "Abweichung")}
 Verwendung: ${ph(taskLabel(task), "Leistung")}
 
 Wir rügen diesen Mangel hiermit unverzüglich (§ 377 HGB) und bitten um mangelfreie Ersatzlieferung bis spätestens ${deadline}. Die beanstandete Ware halten wir zur Abholung bereit.
-Dokumentation: Bautagebucheintrag vom ${dayDE(entry.day)}, ${clock(entry.createdAt)} Uhr${entry.photos.length ? `, ${entry.photos.length} Foto(s)` : ""}.
+Dokumentation: Bautagebucheintrag vom ${dayDE(entry.day)}, ${clock(entry.createdAt)} Uhr${entry.photos.length ? `, ${entry.photos.length} Foto(s)` : ""}.${photoFindings(entry)}
 
 ${signature()}
 
@@ -96,7 +98,7 @@ bei der Kontrolle Ihrer Leistungen haben wir folgenden Mangel festgestellt:
 Leistung: ${ph(taskLabel(task), "Leistung")}
 Ort: ${ph(f.location, "Ort")}
 Beschreibung: ${ph(f.cause ?? entry.summary, "Beschreibung")}
-Dokumentation: Bautagebucheintrag vom ${dayDE(entry.day)}, ${clock(entry.createdAt)} Uhr${entry.photos.length ? `, ${entry.photos.length} Foto(s)` : ""}.
+Dokumentation: Bautagebucheintrag vom ${dayDE(entry.day)}, ${clock(entry.createdAt)} Uhr${entry.photos.length ? `, ${entry.photos.length} Foto(s)` : ""}.${photoFindings(entry)}
 
 Wir fordern Sie auf, den Mangel gemäß § 4 Abs. 7 VOB/B auf Ihre Kosten bis spätestens ${deadline} zu beseitigen und uns die Beseitigung schriftlich anzuzeigen. Nach fruchtlosem Fristablauf behalten wir uns weitere Schritte nach VOB/B vor.
 

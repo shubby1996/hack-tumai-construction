@@ -95,7 +95,9 @@ export interface DiaryEntry {
   summary: string; // cleaned one-liner
   fields: EntryFields;
   photos: string[]; // data URLs (downscaled)
-  engine: "claude" | "rules";
+  photoNotes?: string[]; // what the vision model saw on each photo
+  engine: "open" | "claude" | "rules";
+  model?: string;
 }
 
 export type NoticeType =

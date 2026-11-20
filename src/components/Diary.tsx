@@ -26,7 +26,7 @@ export function Diary() {
                 </span>
                 <Badge tone={e.type === "stoppage" ? "red" : e.type === "defect" ? "amber" : "blue"}>{e.type}</Badge>
                 <span>by {who(e.author)}</span>
-                <Badge tone={e.engine === "claude" ? "violet" : "stone"}>{e.engine}</Badge>
+                <Badge tone={e.engine === "rules" ? "stone" : "violet"}>{e.engine === "open" ? `open model${e.model ? ` · ${e.model}` : ""}` : e.engine}</Badge>
               </div>
               <p className="mt-1 text-sm font-medium text-stone-900">{e.summary}</p>
               <dl className="mt-1 grid grid-cols-2 gap-x-4 text-xs text-stone-600">
@@ -46,6 +46,7 @@ export function Diary() {
                   ))}
               </dl>
               <p className="mt-1 text-xs italic text-stone-400">“{e.transcript}”</p>
+              {e.photoNotes && e.photoNotes.length > 0 && <p className="mt-1 rounded-md bg-violet-50 p-1.5 text-xs text-violet-800">👁 {e.photoNotes.join(" · ")}</p>}
               {e.photos.length > 0 && (
                 <div className="mt-2 flex gap-2">
                   {e.photos.map((p, i) => (

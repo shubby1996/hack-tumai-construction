@@ -17,7 +17,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<Tab>("today");
   const [msg, setMsg] = useState<string | null>(null);
-  const [engine, setEngine] = useState<string>("…");
+  const [engine, setEngine] = useState<{ extraction: string; model?: string | null; vision?: string | null }>({ extraction: "…" });
   const { persona, today, notices, entries, notifications } = useStore();
   const setPersona = useStore((s) => s.setPersona);
   const reset = useStore((s) => s.reset);
@@ -28,8 +28,8 @@ export default function Home() {
     setMounted(true);
     fetch("/api/status")
       .then((r) => r.json())
-      .then((s) => setEngine(s.extraction))
-      .catch(() => setEngine("rules"));
+      .then((s) => setEngine(s))
+      .catch(() => setEngine({ extraction: "rules" }));
   }, []);
 
   const toast = (m: string) => {
@@ -61,7 +61,16 @@ export default function Home() {
             </div>
           </div>
           <span className="rounded-md bg-stone-800 px-2 py-1 text-xs text-amber-300">📅 {dayLabel(today)} 2026</span>
-          <span className="text-xs text-stone-400">AI: {engine === "claude" ? "Claude" : "rule-based (no API key)"}</span>
+          <span className="text-xs text-stone-400">
+            AI:{" "}
+            {engine.extraction === "open"
+              ? `open-source · ${engine.model}${engine.vision && engine.vision !== engine.model ? ` + ${engine.vision}` : ""}`
+              : engine.extraction === "claude"
+                ? "Claude"
+                : engine.extraction === "rules"
+                  ? "rule-based (no model configured)"
+                  : "…"}
+          </span>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-xs text-stone-400 sm:inline">Acting as</span>
             <select

@@ -8,6 +8,15 @@ import type { ExtractResult } from "@/lib/extract-rules";
 import type { DiaryEntry, EntryFields, EntryType } from "@/lib/types";
 import { Badge, Button, Card, Field, inputCls } from "./ui";
 
+const newEntryId = () => `E-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
+const nowIso = () => new Date().toISOString();
+
+interface Photo {
+  url: string;
+  status: "analysing" | "done" | "off" | "error";
+  note?: string; // caption + findings from the vision model
+}
+
 const TYPES: EntryType[] = ["stoppage", "delivery", "defect", "incident", "meeting", "attendance", "progress", "instruction", "note"];
 const PARTIES = ["Client (Bauherr)", "Own company", "Supplier", "Weather", "Other subcontractor"];
 
@@ -30,7 +39,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
   const [lang, setLang] = useState<"de-DE" | "en-US">("de-DE");
   const speech = useSpeech(lang);
   const [text, setText] = useState("");
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<ExtractResult | null>(null);
   const me = PERSONAS.find((p) => p.id === persona)!;
@@ -43,8 +52,30 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
     }
   }, [speech.finalText, speech.interim, speech.listening]);
 
+  const photoNotes = photos.map((p) => p.note).filter((n): n is string => !!n);
+
+  async function addPhoto(file: File) {
+    const url = await downscale(file);
+    setPhotos((ps) => [...ps, { url, status: "analysing" }]);
+    try {
+      const res = await fetch("/api/vision", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ image: url, context: text }),
+      });
+      const a = await res.json();
+      const note =
+        a.engine === "open" && a.caption
+          ? [a.caption, ...(a.findings ?? []).map((f: string) => `Finding: ${f}`), a.textInImage ? `Text in photo: ${a.textInImage}` : ""].filter(Boolean).join(" ")
+          : undefined;
+      setPhotos((ps) => ps.map((p) => (p.url === url ? { ...p, status: a.engine === "open" ? (note ? "done" : "error") : "off", note } : p)));
+    } catch {
+      setPhotos((ps) => ps.map((p) => (p.url === url ? { ...p, status: "error" } : p)));
+    }
+  }
+
   async function structure() {
-    if (!text.trim()) return;
+    if (!text.trim() && !photoNotes.length) return;
     setBusy(true);
     try {
       const res = await fetch("/api/extract", {
@@ -52,6 +83,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           text,
+          photoNotes,
           speaker: `${me.name}, ${me.role}`,
           personaTeam: me.team,
           tasks: tasks.filter((t) => t.status !== "done").map(({ id, name, team, section }) => ({ id, name, team, section })),
@@ -72,16 +104,18 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
   function save() {
     if (!draft) return;
     const entry: DiaryEntry = {
-      id: `E-${Date.now().toString(36)}`,
-      createdAt: new Date().toISOString(),
+      id: newEntryId(),
+      createdAt: nowIso(),
       day: today,
       author: persona,
       type: draft.type,
-      transcript: text,
+      transcript: text || "(photo only)",
       summary: draft.summary,
       fields: draft.fields,
-      photos,
+      photos: photos.map((p) => p.url),
+      photoNotes,
       engine: draft.engine,
+      model: draft.model,
     };
     addEntry(entry);
     onSaved(entry);
@@ -135,23 +169,39 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
                 className="hidden"
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
-                  if (f) setPhotos([...photos, await downscale(f)]);
                   e.target.value = "";
+                  if (f) await addPhoto(f);
                 }}
               />
             </label>
-            <Button variant="primary" onClick={structure} disabled={!text.trim() || busy}>
+            <Button variant="primary" onClick={structure} disabled={(!text.trim() && !photoNotes.length) || busy || photos.some((p) => p.status === "analysing")}>
               {busy ? "Structuring…" : "Structure note →"}
             </Button>
             {!speech.supported && <span className="text-xs text-stone-500">Voice needs Chrome/Edge/Safari – typing works everywhere.</span>}
           </div>
           {photos.length > 0 && (
-            <div className="flex gap-2">
+            <ul className="space-y-2">
               {photos.map((p, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={p} alt="" className="h-14 w-14 rounded-md object-cover" />
+                <li key={i} className="flex items-start gap-2 rounded-lg bg-stone-50 p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.url} alt="" className="h-14 w-14 shrink-0 rounded-md object-cover" />
+                  <div className="text-xs">
+                    {p.status === "analysing" && <span className="text-amber-700">👁 Looking at the photo…</span>}
+                    {p.status === "done" && (
+                      <>
+                        <span className="font-medium text-violet-700">👁 Vision model: </span>
+                        <span className="text-stone-700">{p.note}</span>
+                      </>
+                    )}
+                    {p.status === "off" && <span className="text-stone-500">Photo attached. Photo understanding needs an open vision model (set LLM_BASE_URL).</span>}
+                    {p.status === "error" && <span className="text-red-600">Could not analyse this photo – it is still attached.</span>}
+                    <button className="ml-2 text-stone-400 underline" onClick={() => setPhotos(photos.filter((_, j) => j !== i))}>
+                      remove
+                    </button>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
           <div className="border-t border-stone-100 pt-2">
             <p className="mb-1.5 text-xs text-stone-500">Demo phrases</p>
@@ -169,10 +219,13 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
       {draft && (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={draft.engine === "claude" ? "violet" : "stone"}>{draft.engine === "claude" ? "AI extraction" : "Rule-based extraction"}</Badge>
+            <Badge tone={draft.engine === "rules" ? "stone" : "violet"}>
+              {draft.engine === "open" ? `Open-source model · ${draft.model ?? ""}` : draft.engine === "claude" ? "Claude extraction" : "Rule-based extraction"}
+            </Badge>
             <span className="text-xs text-stone-500">Check and correct before saving.</span>
           </div>
-          <p className="rounded-lg bg-stone-50 p-2 text-xs italic text-stone-600">“{text}”</p>
+          <p className="rounded-lg bg-stone-50 p-2 text-xs italic text-stone-600">“{text || "(photo only)"}”</p>
+          {photoNotes.length > 0 && <p className="rounded-lg bg-violet-50 p-2 text-xs text-violet-800">👁 {photoNotes.join(" · ")}</p>}
 
           {draft.followUpQuestion && draft.missing.length > 0 && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">

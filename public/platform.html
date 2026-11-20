@@ -44,7 +44,7 @@
     <div class="logo">S</div>
     <div>
       <h1>SiteFlow – Platform Explanation</h1>
-      <p>Tum.ai Construction Hack · Challenge B · last updated 20 Nov 2026 · <span id="ver">v0.1</span></p>
+      <p>Tum.ai Construction Hack · Challenge B · last updated 20 Nov 2026 (open-source AI) · <span id="ver">v0.2</span></p>
     </div>
   </div>
 </header>
@@ -159,6 +159,7 @@
     <h3>Today (the main working screen)</h3>
     <ul>
       <li><strong>Capture a site situation:</strong> a large record button for voice (German or English), a text box, photo upload and one-click demo phrases.</li>
+      <li><strong>Photo understanding:</strong> each photo is described by a small open vision model (caption, visible findings, text in the photo). The description feeds the structured entry, and a photo alone can start a note.</li>
       <li><strong>Review before saving:</strong> the note comes back as a structured entry (type, task, cause, responsible party, start time, expected delay). Missing facts are highlighted and the assistant asks one follow-up question with quick-answer chips.</li>
       <li><strong>Suggested next steps:</strong> after saving, the matching notice is offered (for example an obstruction notice after a stoppage).</li>
       <li><strong>Re-plan proposal:</strong> after a stoppage, the knock-on effect, the milestone slip with and without action, idle crew-hours avoided and each proposed action with its reason. Approve or reject.</li>
@@ -209,18 +210,25 @@
 
   <section id="ai">
     <h2>7. AI and extraction</h2>
-    <p>A dictated or typed note becomes a structured diary entry through <code>POST /api/extract</code>. Claude does this when <code>ANTHROPIC_API_KEY</code> is set; otherwise a built-in rule-based extractor takes over, so the demo always works. The header shows which engine is active.</p>
+    <p>SiteFlow uses <strong>small open-source models by default</strong>. It talks to any OpenAI-compatible chat endpoint (Ollama, Groq, Hugging Face, vLLM, LM Studio, OpenRouter), so models can be swapped through environment variables without code changes. Code: <code>src/lib/ai.ts</code>.</p>
+    <p><strong>Engine priority:</strong> open model (<code>LLM_BASE_URL</code> set) → Claude (<code>ANTHROPIC_API_KEY</code> set) → built-in rule-based extractor. If a model call fails, the app falls back to the rules automatically. The header shows which engine and models are active.</p>
+    <h3>7.1 Models</h3>
     <table>
-      <tr><th></th><th>Claude (with API key)</th><th>Rule-based fallback (no key)</th></tr>
-      <tr><td>How</td><td>Claude Messages API with a forced tool call (<code>record_entry</code>) that returns JSON matching a fixed schema</td><td>German and English keyword rules for type, trade, section, time, cause and responsible party</td></tr>
-      <tr><td>Strengths</td><td>Understands free phrasing, dialect and mixed languages; better task matching</td><td>Free, instant, offline, predictable for the demo phrases</td></tr>
-      <tr><td>Model</td><td><code>claude-sonnet-5-5</code> by default, overridable with <code>ANTHROPIC_MODEL</code></td><td>–</td></tr>
-      <tr><td>On failure</td><td>Falls back to the rules automatically</td><td>–</td></tr>
+      <tr><th>Job</th><th>Route</th><th>Default open model</th><th>Size (Ollama)</th></tr>
+      <tr><td>Note → structured diary entry</td><td><code>POST /api/extract</code></td><td><code>qwen3-vl:4b-instruct</code> via <code>LLM_MODEL</code> (any small instruct LLM works, e.g. <code>qwen3:4b</code>)</td><td>3.3 GB</td></tr>
+      <tr><td>Photo understanding</td><td><code>POST /api/vision</code></td><td><code>qwen3-vl:4b-instruct</code> via <code>VLM_MODEL</code> (smaller: <code>qwen3-vl:2b-instruct</code>)</td><td>3.3 GB / 1.9 GB</td></tr>
     </table>
+    <p>One Qwen3-VL model can handle both jobs, so a single 3.3 GB download is enough for a laptop demo. Qwen3-VL is released under Apache 2.0.</p>
+    <h3>7.2 Note extraction</h3>
+    <p>The note, the speaker, the task list and any photo descriptions are sent with a grounded prompt and JSON mode. The answer is cleaned (thinking tags, code fences and surrounding prose are removed) and checked: unknown entry types become "note", task IDs must exist in the plan, empty fields are dropped.</p>
     <p><strong>Entry types:</strong> stoppage, delivery, defect, incident, meeting, attendance, progress, instruction, note.</p>
-    <p><strong>Grounding rules.</strong> The model may use only facts stated in the note and may pick a task only from the plan. It never invents times, amounts, parties or causes. Missing required facts are listed and turned into one follow-up question. For a stoppage the required facts are task, cause, responsible party and expected delay.</p>
-    <p><strong>Human check.</strong> Every extracted field is shown for correction before saving. Nothing is saved, sent or re-planned without a person confirming.</p>
-    <p><strong>Speech-to-text</strong> runs in the browser (Web Speech API: Chrome, Edge, Safari). It is free and needs no key. Typing works in every browser.</p>
+    <p><strong>Grounding rules.</strong> The model may use only facts stated in the note or visible in the photo descriptions, and may pick a task only from the plan. It never invents times, amounts, parties or causes. Missing required facts are listed and turned into one follow-up question. For a stoppage the required facts are task, cause, responsible party and expected delay.</p>
+    <h3>7.3 Photo understanding</h3>
+    <p>When a photo is added, the vision model returns a one-sentence caption, a suggested entry type, visible findings (for example "crack in concrete wall") and any readable text (labels, delivery notes). The result is shown under the photo, passed into note extraction, stored with the diary entry, and printed in defect and obstruction notices as <em>"Fotobefund (automatisch erkannt, bitte prüfen)"</em>. It describes only what is visible and does not guess causes or responsibility.</p>
+    <h3>7.4 Human check</h3>
+    <p>Every extracted field and photo description is shown for correction before saving. Nothing is saved, sent or re-planned without a person confirming.</p>
+    <h3>7.5 Speech-to-text</h3>
+    <p>Speech-to-text runs in the browser (Web Speech API: Chrome, Edge, Safari). It is free and needs no key. Typing works in every browser. An open Whisper model is on the roadmap for offline use.</p>
   </section>
 
   <section id="documents">
@@ -243,12 +251,12 @@
 
   <section id="architecture">
     <h2>9. Architecture, tech stack and data model</h2>
-    <p>SiteFlow is a single Next.js app on Vercel. All logic except AI extraction runs in the browser, and state is kept in the browser's local storage, so there is no database to run for the MVP.</p>
+    <p>SiteFlow is a single Next.js app on Vercel. All logic except the AI calls runs in the browser, and state is kept in the browser's local storage, so there is no database to run for the MVP.</p>
     <table>
       <tr><th>Layer</th><th>Technology</th><th>Where in the code</th></tr>
       <tr><td>Web app and hosting</td><td>Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, hosted on Vercel</td><td><code>src/app/page.tsx</code>, <code>src/components/*</code></td></tr>
-      <tr><td>API</td><td>Next.js route handlers: <code>POST /api/extract</code> (note → entry), <code>GET /api/status</code> (active AI engine)</td><td><code>src/app/api/*</code></td></tr>
-      <tr><td>AI extraction</td><td>Anthropic Messages API (tool use), rule-based fallback</td><td><code>src/app/api/extract/route.ts</code>, <code>src/lib/extract-rules.ts</code></td></tr>
+      <tr><td>API</td><td>Next.js route handlers: <code>POST /api/extract</code> (note → entry), <code>POST /api/vision</code> (photo → caption and findings), <code>GET /api/status</code> (active engine and models)</td><td><code>src/app/api/*</code></td></tr>
+      <tr><td>AI models</td><td>Small open-source LLM and VLM (default Qwen3-VL 4B) through any OpenAI-compatible endpoint; optional Claude; rule-based fallback</td><td><code>src/lib/ai.ts</code>, <code>src/app/api/extract/route.ts</code>, <code>src/app/api/vision/route.ts</code>, <code>src/lib/extract-rules.ts</code></td></tr>
       <tr><td>Speech-to-text</td><td>Browser Web Speech API (de-DE, en-US)</td><td><code>src/lib/useSpeech.ts</code></td></tr>
       <tr><td>Plan engine</td><td>Plain TypeScript: scheduling, impact, preventive scan, re-plan</td><td><code>src/lib/engine.ts</code></td></tr>
       <tr><td>State</td><td>Zustand store persisted to localStorage</td><td><code>src/lib/store.ts</code></td></tr>
@@ -259,7 +267,7 @@
     <ul>
       <li><strong>Task:</strong> id, name, team, section, planned start, duration, crew, predecessors, milestone, status, delay days, minimum duration, readiness checklist.</li>
       <li><strong>Readiness item:</strong> open or cleared, note, owner, due day.</li>
-      <li><strong>Diary entry:</strong> time, day, author, type, transcript, summary, fields (task, cause, responsible party, start time, expected delay, material, quantity, location…), photos, extraction engine.</li>
+      <li><strong>Diary entry:</strong> time, day, author, type, transcript, summary, fields (task, cause, responsible party, start time, expected delay, material, quantity, location…), photos, photo descriptions, extraction engine and model.</li>
       <li><strong>Notice:</strong> type, title, addressee, body, references, status (draft / approved), mode (preventive / reactive / report).</li>
       <li><strong>Change record:</strong> who, task, before, after, reason, tasks moved, who was notified.</li>
       <li><strong>Decision:</strong> preventive, reactive or change, with text and time.</li>
@@ -286,12 +294,20 @@
     <h2>11. Deployment and operations</h2>
     <p>The app runs on Vercel (Hobby plan, project <code>hack-tumai-construction</code>) and redeploys automatically on every push to <code>main</code>. The first build took 37 seconds.</p>
     <h3>Environment variables</h3>
-    <p>Set them in Vercel → Project → Settings → Environment Variables, then redeploy.</p>
+    <p>Set them in <code>.env.local</code> for local runs, or in Vercel → Project → Settings → Environment Variables (then redeploy). See <code>.env.example</code>.</p>
     <table>
       <tr><th>Variable</th><th>Required</th><th>Effect</th></tr>
-      <tr><td><code>ANTHROPIC_API_KEY</code></td><td>No</td><td>Turns on Claude extraction; without it the rule-based extractor is used</td></tr>
-      <tr><td><code>ANTHROPIC_MODEL</code></td><td>No</td><td>Overrides the default model <code>claude-sonnet-5-5</code></td></tr>
+      <tr><td><code>LLM_BASE_URL</code></td><td>No</td><td>OpenAI-compatible endpoint of the open model, e.g. <code>http://localhost:11434/v1</code> (Ollama) or <code>https://api.groq.com/openai/v1</code>. Turns on open-model extraction and photo understanding.</td></tr>
+      <tr><td><code>LLM_MODEL</code></td><td>No</td><td>Model for notes (default <code>qwen3-vl:4b-instruct</code>)</td></tr>
+      <tr><td><code>VLM_MODEL</code></td><td>No</td><td>Model for photos (default: same as <code>LLM_MODEL</code>)</td></tr>
+      <tr><td><code>LLM_API_KEY</code></td><td>For hosted endpoints</td><td>API key of the hosted provider (any value for Ollama)</td></tr>
+      <tr><td><code>ANTHROPIC_API_KEY</code>, <code>ANTHROPIC_MODEL</code></td><td>No</td><td>Optional paid alternative, used only when <code>LLM_BASE_URL</code> is not set</td></tr>
     </table>
+    <h3>Running the open models</h3>
+    <ul>
+      <li><strong>Local, fully offline:</strong> install Ollama (0.12.7 or newer), run <code>ollama pull qwen3-vl:4b-instruct</code>, copy <code>.env.example</code> to <code>.env.local</code> and run <code>npm run dev</code>. The app and the model must run on the same machine.</li>
+      <li><strong>On Vercel:</strong> Vercel cannot reach a model on your laptop. Point <code>LLM_BASE_URL</code> at a hosted open-weight endpoint (for example the Groq free tier) and check the provider's current model IDs, including one with image input for <code>VLM_MODEL</code>.</li>
+    </ul>
     <h3>Run locally</h3>
 <pre><code>npm install
 npm run dev          # http://localhost:3000
@@ -300,7 +316,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
     <ul>
       <li>Voice input needs HTTPS, which Vercel provides.</li>
       <li>State lives in each browser's localStorage. Different devices do not share data, and clearing browser data or pressing "Reset demo" restores the starting state.</li>
-      <li>Only the note text, the speaker's name and role, and the task list are sent to the extraction API (and on to Anthropic when a key is set). Photos and documents stay in the browser.</li>
+      <li>Only the note text, the speaker's name and role, the task list and photo descriptions are sent to the note model; photos are sent only to the vision model. With local Ollama nothing leaves the machine. Documents stay in the browser.</li>
     </ul>
   </section>
 
@@ -311,6 +327,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
       <li>No shared database or login: all personas share one browser, so each foreman cannot yet use their own phone.</li>
       <li>Notifications appear in the app only (no push or email).</li>
       <li>Voice input depends on the browser's speech recognition and does not work in Firefox.</li>
+      <li>Small open models (2–4B) make more extraction mistakes than large ones; the review step and the rule-based fallback cover this. The open-model path was tested against a stand-in server, not yet against a real Qwen3-VL instance.</li>
       <li>The plan is a fixed synthetic two-week plan (14 tasks); there is no import from Excel or MS Project yet.</li>
       <li>The re-plan heuristic does not model crew capacity limits per team, so a pulled-forward task can overlap another task of the same team.</li>
       <li>Legal references in the templates have not been reviewed by a construction lawyer.</li>
@@ -319,7 +336,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
     <table>
       <tr><th>Stage</th><th>Goal</th><th>Main additions</th></tr>
       <tr><td>Pilot-ready</td><td>One real site, one contractor</td><td>Shared database (e.g. Vercel Postgres or Supabase), login and roles, push and email notifications, plan import from Excel / MS Project, lawyer-reviewed VOB/B templates, EU hosting and GDPR basics</td></tr>
-      <tr><td>Product v1</td><td>Several sites per contractor</td><td>Claims manager view with evidence packs, defect management, offline capture, Whisper speech-to-text, constraint solver (OR-Tools) for larger plans, photo checks against reported progress</td></tr>
+      <tr><td>Product v1</td><td>Several sites per contractor</td><td>Claims manager view with evidence packs, defect management, offline capture, open Whisper speech-to-text, constraint solver (OR-Tools) for larger plans, photo checks against reported progress</td></tr>
       <tr><td>Scale</td><td>Learn across projects</td><td>Analytics on recurring blockers and late trades, preventive alerts that learn from history, client portal, ERP / document / scheduling integrations</td></tr>
     </table>
     <p><strong>Questions to validate before the pilot:</strong> will foremen really update the plan daily, do site managers trust drafted notices enough to send them, and who pays (contractor management or the site manager)?</p>
@@ -330,6 +347,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
     <p>Add a row whenever the platform or this document changes. Newest first.</p>
     <table>
       <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+      <tr><td>20 Nov 2026</td><td>v0.2</td><td>Open-source AI: any OpenAI-compatible endpoint (Ollama, Groq …), default Qwen3-VL 4B for notes and photos; photo understanding (<code>/api/vision</code>) feeding notes and notices; Claude now optional</td></tr>
       <tr><td>20 Nov 2026</td><td>v0.1</td><td>First MVP deployed to Vercel; platform explanation created</td></tr>
     </table>
   </section>

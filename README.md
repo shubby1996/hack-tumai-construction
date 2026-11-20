@@ -13,7 +13,8 @@ and **drafts every notice and report** (VOB/B). The site manager approves re-pla
 | Area | What works |
 | --- | --- |
 | Capture | Voice dictation in German or English (browser speech API, Chrome/Edge/Safari), typing, photos, demo phrases |
-| Extraction | Note → structured diary entry (type, task, cause, responsible party, time, delay). Claude if `ANTHROPIC_API_KEY` is set, otherwise a rule-based fallback. Asks one follow-up question for missing facts. |
+| Extraction | Note → structured diary entry (type, task, cause, responsible party, time, delay) with a small open-source LLM (Ollama, Groq …), Claude, or a rule-based fallback. Asks one follow-up question for missing facts. |
+| Photo understanding | A small open vision model (Qwen3-VL) describes each photo: caption, visible findings, text in the image. A photo alone can start a note. |
 | Shared plan | Two-week Gantt for 4 subcontractor teams, readiness checklists, milestones, forward-pass scheduling |
 | Change control | Foremen change their own tasks freely; impact on other teams and milestones is computed and the affected people are notified |
 | Preventive | Daily scan of tasks starting in the next 5 working days, top 3 blockers ranked by due date and milestone criticality, draft request letters, mark cleared |
@@ -41,13 +42,25 @@ npm run dev          # http://localhost:3000
 npm run check:engine # prints the plan engine's results for the demo scenario
 ```
 
-Optional: copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY` to use Claude for extraction.
+## AI models: open source by default
 
-## Deploy to Vercel
+SiteFlow talks to any **OpenAI-compatible** chat endpoint, so small open models work without code changes.
+Engine priority: open model (`LLM_BASE_URL`) → Claude (`ANTHROPIC_API_KEY`) → built-in rules.
 
-1. Import this GitHub repo in Vercel (framework preset: Next.js, no settings needed).
-2. Optional: add `ANTHROPIC_API_KEY` (and `ANTHROPIC_MODEL`) under *Settings → Environment Variables*.
-3. Deploy. Voice input needs HTTPS, which Vercel provides.
+| Job | Default open model | Size | Notes |
+| --- | --- | --- | --- |
+| Note → structured diary entry | `qwen3-vl:4b-instruct` (or any small instruct LLM, e.g. `qwen3:4b`) | 3.3 GB | JSON mode, grounded prompt, falls back to rules on error |
+| Photo understanding | `qwen3-vl:4b-instruct` / `qwen3-vl:2b-instruct` | 3.3 / 1.9 GB | Caption, visible findings, text in the photo; feeds the note and the notice ("Fotobefund") |
+
+**Local, fully offline (Ollama ≥ 0.12.7):**
+
+```bash
+ollama pull qwen3-vl:4b-instruct
+cp .env.example .env.local   # Option A1 is pre-filled
+npm run dev
+```
+
+**On Vercel:** Vercel cannot reach a model on your laptop. Use a hosted open-weight endpoint instead (for example the Groq free tier, Option A2 in `.env.example`), set the variables in Vercel → Settings → Environment Variables and redeploy.
 
 ## Architecture
 
@@ -55,10 +68,12 @@ Optional: copy `.env.example` to `.env.local` and set `ANTHROPIC_API_KEY` to use
 src/
   app/
     page.tsx              UI shell: persona switch, tabs
-    api/extract/route.ts  note → structured entry (Claude tool-use, rule fallback)
+    api/extract/route.ts  note (+ photo notes) → structured entry (open LLM / Claude / rules)
+    api/vision/route.ts   photo → caption and findings (open VLM)
     api/status/route.ts   which AI engine is active
   components/             Today, Capture, Replan, Plan (Gantt), TaskEditor, Diary, Documents
   lib/
+    ai.ts                 OpenAI-compatible client for open models, JSON parsing, photo analysis
     seed.ts               synthetic site: teams, personas, 14 tasks, milestones, settings
     engine.ts             scheduling, impact, preventive scan, re-plan heuristic
     extract-rules.ts      offline keyword extractor (DE/EN)
@@ -78,6 +93,6 @@ src/
 
 1. Shared database (e.g. Vercel Postgres / Supabase) + login and roles, so every foreman uses their own phone.
 2. Real notifications (push / email).
-3. Whisper for speech-to-text, offline capture.
+3. Whisper (open source) for speech-to-text, offline capture.
 4. Plan import from Excel / MS Project; claims evidence pack for the claims manager.
 5. Constraint solver (OR-Tools) for larger plans; templates reviewed by a construction lawyer.

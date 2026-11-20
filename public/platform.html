@@ -306,7 +306,7 @@
     <h3>Running the open models</h3>
     <ul>
       <li><strong>Local, fully offline:</strong> install Ollama (0.12.7 or newer), run <code>ollama pull qwen3-vl:4b-instruct</code>, copy <code>.env.example</code> to <code>.env.local</code> and run <code>npm run dev</code>. The app and the model must run on the same machine.</li>
-      <li><strong>On Vercel:</strong> Vercel cannot reach a model on your laptop. Point <code>LLM_BASE_URL</code> at a hosted open-weight endpoint (for example the Groq free tier) and check the provider's current model IDs, including one with image input for <code>VLM_MODEL</code>.</li>
+      <li><strong>On Vercel:</strong> Vercel cannot reach a model on your laptop. Point <code>LLM_BASE_URL</code> at a hosted open-weight endpoint. The live app uses the Groq free tier: <code>LLM_BASE_URL=https://api.groq.com/openai/v1</code>, <code>LLM_MODEL=llama-3.1-8b-instant</code> (text), <code>VLM_MODEL=qwen/qwen3.8-27b</code> (photos, preview model) and <code>LLM_API_KEY</code> from console.groq.com. Check Groq's model list if a preview model is retired.</li>
     </ul>
     <h3>Run locally</h3>
 <pre><code>npm install

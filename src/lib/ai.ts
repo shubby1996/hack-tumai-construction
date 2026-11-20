@@ -48,7 +48,8 @@ export async function openChatJson<T>(cfg: AiConfig, model: string, messages: Ch
         model,
         messages,
         temperature: 0.1,
-        max_tokens: 900,
+        // Room for models that reason before answering (e.g. Qwen on Groq); override with LLM_MAX_TOKENS.
+        max_tokens: Number(process.env.LLM_MAX_TOKENS) || 2048,
         response_format: { type: "json_object" },
       }),
     });

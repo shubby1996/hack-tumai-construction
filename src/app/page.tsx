@@ -109,7 +109,8 @@ export default function Home() {
         {tab === "diary" && <Diary />}
         {tab === "docs" && <Documents toast={toast} />}
         <p className="mt-8 text-center text-xs text-stone-400">
-          Prototype · synthetic data · drafts are a drafting aid, not legal advice – the site manager reviews everything before sending.
+          Prototype · synthetic data · drafts are a drafting aid, not legal advice – the site manager reviews everything before sending. ·{" "}
+          <a href="/platform.html" className="underline hover:text-stone-600">How the platform works</a>
         </p>
       </main>
 

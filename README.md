@@ -6,6 +6,8 @@ and **drafts every notice and report** (VOB/B). The site manager approves re-pla
 
 > Prototype with synthetic data. Drafts are a drafting aid, not legal advice.
 
+📄 **Platform explanation:** [`public/platform.html`](public/platform.html), live at [hack-tumai-construction.vercel.app/platform.html](https://hack-tumai-construction.vercel.app/platform.html). Keep it updated with every change (see its changelog section).
+
 ## What the MVP does
 
 | Area | What works |

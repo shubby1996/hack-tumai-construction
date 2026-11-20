@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SiteFlow – Platform Explanation</title>
+<style>
+  :root { --ink:#1c1917; --quiet:#57534e; --line:#e7e5e4; --bg:#fafaf9; --accent:#f59e0b; --accent-soft:#fef3c7; --blue:#2563eb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color:var(--ink); background:var(--bg); line-height:1.6; }
+  header.top { background:#1c1917; color:#fff; padding:20px 24px; }
+  header.top .wrap { display:flex; align-items:center; gap:12px; }
+  .logo { width:36px; height:36px; border-radius:8px; background:var(--accent); color:#1c1917; font-weight:900; display:flex; align-items:center; justify-content:center; }
+  header.top h1 { margin:0; font-size:20px; }
+  header.top p { margin:0; color:#a8a29e; font-size:13px; }
+  .wrap { max-width:880px; margin:0 auto; }
+  main { padding:24px; }
+  nav.toc { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 20px; margin-bottom:24px; font-size:14px; }
+  nav.toc ol { margin:6px 0 0; padding-left:20px; columns:2; }
+  nav.toc a { color:var(--blue); text-decoration:none; }
+  section { background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px 24px 16px; margin-bottom:20px; }
+  h2 { font-size:20px; margin:18px 0 8px; }
+  h3 { font-size:15px; margin:16px 0 6px; }
+  p.lead { font-size:17px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; margin:10px 0; }
+  th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th { background:#f5f5f4; font-weight:600; }
+  code { background:#f5f5f4; border-radius:4px; padding:1px 5px; font-size:0.9em; }
+  pre { background:#1c1917; color:#f5f5f4; border-radius:8px; padding:14px; overflow-x:auto; font-size:13px; }
+  pre code { background:none; padding:0; }
+  .formula { background:#f5f5f4; border-radius:8px; padding:12px 16px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size:14px; overflow-x:auto; }
+  .note { background:var(--accent-soft); border-left:4px solid var(--accent); padding:10px 14px; border-radius:6px; font-size:14px; }
+  .badge { display:inline-block; font-size:12px; border-radius:999px; padding:1px 8px; background:#e7e5e4; }
+  figure { margin:12px 0; }
+  figure svg { width:100%; height:auto; }
+  figcaption { font-size:13px; color:var(--quiet); }
+  footer { color:var(--quiet); font-size:12px; text-align:center; padding:12px 24px 32px; }
+  @media (max-width:640px) { nav.toc ol { columns:1; } section { padding:4px 14px 12px; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="logo">S</div>
+    <div>
+      <h1>SiteFlow – Platform Explanation</h1>
+      <p>Tum.ai Construction Hack · Challenge B · last updated 20 Nov 2026 · <span id="ver">v0.1</span></p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="lead">SiteFlow is a shared two-week site plan with an AI assistant on top. Every subcontractor updates its own tasks by voice from site. The assistant flags blockers before they bite (preventive), proposes a re-plan when something breaks (reactive), and drafts every notice and report under VOB/B. The site manager approves re-plans and outgoing documents.</p>
+
+  <nav class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#problem">The problem it solves</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#users">Users and roles</a></li>
+      <li><a href="#features">Features by screen</a></li>
+      <li><a href="#engine">The plan engine</a></li>
+      <li><a href="#ai">AI and extraction</a></li>
+      <li><a href="#documents">Documents and VOB/B templates</a></li>
+      <li><a href="#architecture">Architecture, tech stack and data model</a></li>
+      <li><a href="#demo">Demo script</a></li>
+      <li><a href="#deployment">Deployment and operations</a></li>
+      <li><a href="#roadmap">Limitations and roadmap</a></li>
+      <li><a href="#changelog">Changelog</a></li>
+    </ol>
+  </nav>
+
+  <section id="overview">
+    <h2>1. Overview</h2>
+    <table>
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Live app</td><td><a href="https://hack-tumai-construction.vercel.app">hack-tumai-construction.vercel.app</a></td></tr>
+      <tr><td>Source code</td><td><a href="https://github.com/shubby1996/hack-tumai-construction">github.com/shubby1996/hack-tumai-construction</a> (branch <code>main</code>, auto-deploys to Vercel)</td></tr>
+      <tr><td>Built for</td><td>Tum.ai Construction Hack, Challenge B: AI Site Manager Assistant for Documentation, Daily Reports and Claims</td></tr>
+      <tr><td>Status</td><td>Hackathon MVP with synthetic data; one browser holds the state, personas are switched in the header</td></tr>
+      <tr><td>Contract basis</td><td>VOB/B (German standard construction contract terms)</td></tr>
+    </table>
+    <p class="note">SiteFlow is a drafting aid, not legal advice. Every outgoing letter is reviewed and released by the site manager.</p>
+  </section>
+
+  <section id="problem">
+    <h2>2. The problem it solves</h2>
+    <p>Site managers lose most of their day to paperwork, and money is lost when that paperwork is late or missing. Many subcontractors share one short-term plan, but each changes its part alone, so nobody sees the knock-on effect until a crew stands idle or a milestone slips.</p>
+    <p>What the challenge owner stressed:</p>
+    <ul>
+      <li><strong>Claims get lost.</strong> The claims manager (<em>Nachtragsmanager</em>) sits far from the site. Without timely documentation, no claim is filed.</li>
+      <li><strong>Defects are expensive.</strong> Rework costs far more than people expect.</li>
+      <li><strong>Delays are found too late.</strong> "Suddenly we are two months behind."</li>
+      <li><strong>Stoppages waste crews.</strong> When work stops, the crew should do something useful instead.</li>
+    </ul>
+    <p>SiteFlow answers this with one shared plan and two kinds of support. Preventive support clears blockers before work starts. Reactive support re-plans the moment something breaks. Both produce the documentation automatically.</p>
+  </section>
+
+  <section id="how">
+    <h2>3. How it works</h2>
+    <p>Every input becomes a structured entry in one shared plan and site diary. Two loops run on that plan, and every output waits for the site manager's approval.</p>
+    <figure>
+      <svg viewBox="0 0 760 392" role="img" aria-label="Every note feeds one shared plan; every output waits for the site manager" font-size="13" font-family="ui-sans-serif, system-ui, Arial, sans-serif">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a8a29e"/></marker></defs>
+        <text x="24" y="34" font-size="15" font-weight="600" fill="#1c1917">Every note feeds one shared plan; every output waits for the site manager</text>
+        <g fill="none" stroke="#a8a29e" stroke-width="1.25">
+          <path d="M174 100H204" marker-end="url(#arr)"/><path d="M174 172H204" marker-end="url(#arr)"/><path d="M174 244H204" marker-end="url(#arr)"/>
+          <path d="M356 172H386" marker-end="url(#arr)"/>
+          <path d="M558 94H588" marker-end="url(#arr)"/><path d="M558 150H588" marker-end="url(#arr)"/><path d="M558 206H588" marker-end="url(#arr)"/><path d="M558 262H588" marker-end="url(#arr)"/>
+          <path d="M663 284V318" marker-end="url(#arr)"/>
+        </g>
+        <g stroke="#a8a29e" stroke-width="1.25" fill="none">
+          <rect x="24" y="72" width="150" height="56" rx="8"/><rect x="24" y="144" width="150" height="56" rx="8"/><rect x="24" y="216" width="150" height="56" rx="8"/>
+          <rect x="206" y="72" width="150" height="200" rx="8"/>
+          <rect x="590" y="72" width="146" height="44" rx="8"/><rect x="590" y="128" width="146" height="44" rx="8"/><rect x="590" y="184" width="146" height="44" rx="8"/><rect x="590" y="240" width="146" height="44" rx="8"/>
+        </g>
+        <rect x="388" y="72" width="170" height="220" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+        <rect x="400" y="132" width="146" height="64" rx="8" fill="#f5f5f4" stroke="#a8a29e" stroke-width="1.25"/>
+        <rect x="400" y="212" width="146" height="64" rx="8" fill="#f5f5f4" stroke="#a8a29e" stroke-width="1.25"/>
+        <rect x="24" y="320" width="712" height="48" rx="8" fill="#f5f5f4" stroke="#a8a29e" stroke-width="1.25"/>
+        <g text-anchor="middle" fill="#1c1917">
+          <text x="99" y="96" font-weight="600">Foreman updates</text><text x="99" y="114" font-size="11.5" fill="#57534e">voice or tap</text>
+          <text x="99" y="168" font-weight="600">Site manager</text><text x="99" y="186" font-size="11.5" fill="#57534e">notes and photos</text>
+          <text x="99" y="240" font-weight="600">Minutes, emails</text><text x="99" y="258" font-size="11.5" fill="#57534e">pasted text</text>
+          <text x="281" y="144" font-weight="600">AI extraction</text>
+          <text x="281" y="166" font-size="11.5" fill="#57534e">Structured entry</text><text x="281" y="182" font-size="11.5" fill="#57534e">Asks one follow-up</text><text x="281" y="198" font-size="11.5" fill="#57534e">You confirm fields</text>
+          <text x="473" y="98" font-size="15" font-weight="600">Shared plan</text><text x="473" y="116" font-size="11.5" fill="#57534e">and site diary</text>
+          <text x="473" y="156" font-weight="600">Preventive scan</text><text x="473" y="176" font-size="11.5" fill="#57534e">next 5 working days</text>
+          <text x="473" y="236" font-weight="600">Reactive re-plan</text><text x="473" y="256" font-size="11.5" fill="#57534e">after a stoppage</text>
+          <text x="663" y="98" font-weight="600">Blocker alerts</text><text x="663" y="154" font-weight="600">Re-plan proposal</text>
+          <text x="663" y="210" font-weight="600">VOB/B notices</text><text x="663" y="266" font-weight="600">Daily report</text>
+          <text x="380" y="349" font-weight="600">Site manager approves; PDF or Word export; affected teams are notified</text>
+        </g>
+      </svg>
+      <figcaption>How SiteFlow works: capture, shared plan with two loops, outputs, approval.</figcaption>
+    </figure>
+    <p>The two-week plan itself (tasks, crews, dependencies, readiness checklists) is loaded once and then changed by foremen, stoppages and approved re-plans.</p>
+  </section>
+
+  <section id="users">
+    <h2>4. Users and roles</h2>
+    <p>Five personas share the demo site. The site manager is the only one who approves; foremen change their own tasks freely and everyone affected is notified.</p>
+    <table>
+      <tr><th>Persona (demo name)</th><th>Company</th><th>Can do</th><th>Cannot do</th></tr>
+      <tr><td>Site manager (Max Bauer)</td><td>Hauptbau GmbH, main contractor</td><td>Capture notes, change any task, clear blockers, approve or reject re-plans, approve documents, generate the daily report</td><td>–</td></tr>
+      <tr><td>Foreman, Earthworks (Jonas Huber)</td><td>Erdbau Huber GmbH</td><td>Capture notes, change own team's tasks, clear own blockers, draft notices</td><td>Approve re-plans or documents; change other teams' tasks</td></tr>
+      <tr><td>Foreman, Formwork (Lena Weber)</td><td>Schalungsbau Weber GmbH</td><td>Same as above, for formwork tasks</td><td>Same as above</td></tr>
+      <tr><td>Foreman, Rebar (Mehmet Kaya)</td><td>Bewehrung Kraus GmbH</td><td>Same as above, for rebar tasks</td><td>Same as above</td></tr>
+      <tr><td>Foreman, Concrete (Piotr Nowak)</td><td>Betonbau Schmid GmbH</td><td>Same as above, for concrete tasks</td><td>Same as above</td></tr>
+    </table>
+    <p><strong>Change-control rule.</strong> A foreman may change any of their own tasks, whatever depends on it. The change applies at once. SiteFlow computes its impact and notifies the affected foremen and the site manager, including any milestone that now slips.</p>
+    <p>All company and person names are fictional.</p>
+  </section>
+
+  <section id="features">
+    <h2>5. Features by screen</h2>
+    <p>The app has four tabs. A persona switch and a "Reset demo" button sit in the header.</p>
+    <h3>Today (the main working screen)</h3>
+    <ul>
+      <li><strong>Capture a site situation:</strong> a large record button for voice (German or English), a text box, photo upload and one-click demo phrases.</li>
+      <li><strong>Review before saving:</strong> the note comes back as a structured entry (type, task, cause, responsible party, start time, expected delay). Missing facts are highlighted and the assistant asks one follow-up question with quick-answer chips.</li>
+      <li><strong>Suggested next steps:</strong> after saving, the matching notice is offered (for example an obstruction notice after a stoppage).</li>
+      <li><strong>Re-plan proposal:</strong> after a stoppage, the knock-on effect, the milestone slip with and without action, idle crew-hours avoided and each proposed action with its reason. Approve or reject.</li>
+      <li><strong>Blockers to clear:</strong> the top 3 open readiness items in the next 5 working days, with "Draft request" and "Mark cleared".</li>
+      <li><strong>Notifications</strong> for the current persona, and <strong>Today at a glance:</strong> preventive vs reactive decisions and milestone status.</li>
+      <li><strong>My tasks</strong> (foremen only): own tasks with an editor to shift dates, change duration or status, with a live impact preview.</li>
+    </ul>
+    <h3>Plan</h3>
+    <ul>
+      <li>Two-week Gantt chart (Mon 23 Nov – Fri 4 Dec 2026) grouped by team, with crew size, readiness warnings, milestone markers, delays striped red and blocked tasks outlined.</li>
+      <li>Click a task to see readiness details and change it.</li>
+    </ul>
+    <h3>Diary</h3>
+    <ul>
+      <li>Chronological site diary with every field, the original transcript and photos.</li>
+      <li>Decision log tagged preventive, reactive or change.</li>
+      <li>Change log (audit trail): who changed what, old and new values, reason, tasks moved and who was notified.</li>
+    </ul>
+    <h3>Documents</h3>
+    <ul>
+      <li>List of drafts and approved documents, tagged preventive, reactive or report.</li>
+      <li>Editor for drafts; approved documents are locked.</li>
+      <li>Approve (site manager only), export to PDF and Word, and "+ Daily report".</li>
+    </ul>
+  </section>
+
+  <section id="engine">
+    <h2>6. The plan engine</h2>
+    <p>The engine is deliberately simple and explainable: a forward pass over the task graph, a rule-based readiness scan and a greedy re-plan. Every proposal states its reason in plain words. Code: <code>src/lib/engine.ts</code>.</p>
+    <h3>6.1 Scheduling</h3>
+    <p>Days are working days (Mon–Fri) in the two-week window. Each task starts on its planned day or the day after its last predecessor finishes, whichever is later. Stoppage delays are added to the task's duration.</p>
+    <div class="formula">ES(t) = max( plannedStart(t), max over predecessors p of EF(p) + 1 )<br>EF(t) = ES(t) + duration(t) + delay(t) − 1</div>
+    <p>Milestone slip is the finish of the milestone task minus its target day (never below zero).</p>
+    <h3>6.2 Change impact</h3>
+    <p>Any change (by a foreman, a stoppage or a re-plan) is scheduled before and after. Tasks whose start or finish moves are listed, their teams and the site manager are notified, and any new milestone slip is flagged.</p>
+    <h3>6.3 Preventive scan</h3>
+    <p>Each task has a readiness checklist: predecessor, material, crew, equipment, permit, drawings. Every day the engine looks at tasks starting in the next 5 working days with an open item. Alerts are ranked by due date first, then by slack to the nearest milestone. Only the top 3 are shown, to avoid alert fatigue.</p>
+    <h3>6.4 Reactive re-plan</h3>
+    <p>After a stoppage the engine proposes, in this order:</p>
+    <ol>
+      <li><strong>Recover milestone slip</strong> by adding one extra crew to downstream tasks that can be shortened (each task has a minimum duration), within the limit of 1 extra crew per day and no overtime.</li>
+      <li><strong>Give the stopped crew work for the rest of today:</strong> pull forward a task of the same team whose predecessors are finished and whose readiness is fully cleared.</li>
+      <li><strong>Fill idle days of other teams</strong> caused by the delay, inside the 5-day horizon, with the same pull-forward rule.</li>
+    </ol>
+    <p>The objective is fewest days of milestone slip first, then fewest idle crew-hours. Cost is a constraint, not the goal.</p>
+    <p><strong>Demo result.</strong> A 1-day excavation stoppage in section C would slip "Foundation section C complete" by 1 day. The proposal adds a crew to the foundation formwork (2 → 1 day), moves the earthworks crew to backfilling section A for the rest of the day, and brings formwork walls section B forward. All milestones hold and about 72 idle crew-hours are avoided.</p>
+  </section>
+
+  <section id="ai">
+    <h2>7. AI and extraction</h2>
+    <p>A dictated or typed note becomes a structured diary entry through <code>POST /api/extract</code>. Claude does this when <code>ANTHROPIC_API_KEY</code> is set; otherwise a built-in rule-based extractor takes over, so the demo always works. The header shows which engine is active.</p>
+    <table>
+      <tr><th></th><th>Claude (with API key)</th><th>Rule-based fallback (no key)</th></tr>
+      <tr><td>How</td><td>Claude Messages API with a forced tool call (<code>record_entry</code>) that returns JSON matching a fixed schema</td><td>German and English keyword rules for type, trade, section, time, cause and responsible party</td></tr>
+      <tr><td>Strengths</td><td>Understands free phrasing, dialect and mixed languages; better task matching</td><td>Free, instant, offline, predictable for the demo phrases</td></tr>
+      <tr><td>Model</td><td><code>claude-sonnet-5-5</code> by default, overridable with <code>ANTHROPIC_MODEL</code></td><td>–</td></tr>
+      <tr><td>On failure</td><td>Falls back to the rules automatically</td><td>–</td></tr>
+    </table>
+    <p><strong>Entry types:</strong> stoppage, delivery, defect, incident, meeting, attendance, progress, instruction, note.</p>
+    <p><strong>Grounding rules.</strong> The model may use only facts stated in the note and may pick a task only from the plan. It never invents times, amounts, parties or causes. Missing required facts are listed and turned into one follow-up question. For a stoppage the required facts are task, cause, responsible party and expected delay.</p>
+    <p><strong>Human check.</strong> Every extracted field is shown for correction before saving. Nothing is saved, sent or re-planned without a person confirming.</p>
+    <p><strong>Speech-to-text</strong> runs in the browser (Web Speech API: Chrome, Edge, Safari). It is free and needs no key. Typing works in every browser.</p>
+  </section>
+
+  <section id="documents">
+    <h2>8. Documents and VOB/B templates</h2>
+    <p>Seven document types are generated from recorded fields only, in German. Anything not recorded appears as a visible <code>[… ergänzen]</code> placeholder. Code: <code>src/lib/templates.ts</code>.</p>
+    <table>
+      <tr><th>Document</th><th>Legal basis</th><th>Triggered by</th><th>Addressee</th><th>Mode</th></tr>
+      <tr><td>Obstruction notice (<em>Behinderungsanzeige</em>)</td><td>§ 6 Abs. 1 VOB/B; reserves § 6 Abs. 2 time extension</td><td>Stoppage entry</td><td>Client</td><td>Reactive</td></tr>
+      <tr><td>Defect notice (<em>Mängelanzeige</em>)</td><td>§ 4 Abs. 7 VOB/B, with deadline</td><td>Defect entry</td><td>Responsible subcontractor</td><td>Reactive</td></tr>
+      <tr><td>Complaint about a delivery (<em>Mängelrüge</em>)</td><td>§ 377 HGB (prompt notice)</td><td>Delivery entry with a deviation</td><td>Supplier</td><td>Reactive</td></tr>
+      <tr><td>Additional cost notice (<em>Mehrkostenanzeige</em>)</td><td>§ 2 Abs. 5/6 VOB/B</td><td>Instruction / change entry</td><td>Client</td><td>Reactive</td></tr>
+      <tr><td>Notice of concern (<em>Bedenkenanzeige</em>)</td><td>§ 4 Abs. 3 VOB/B</td><td>Stoppage, instruction, defect or delivery entry</td><td>Client</td><td>Reactive</td></tr>
+      <tr><td>Request for documents or confirmation (<em>Anforderung</em>)</td><td>§ 3 Abs. 1 VOB/B (for client documents)</td><td>Preventive blocker alert</td><td>Client or supplier</td><td>Preventive</td></tr>
+      <tr><td>Daily site report (<em>Bautagesbericht</em>)</td><td>–</td><td>"+ Daily report" button</td><td>Project file</td><td>Report</td></tr>
+    </table>
+    <p><strong>Workflow.</strong> Every document starts as a draft and can be edited freely. Only the site manager can approve; approval locks it and is logged as a preventive or reactive decision. PDF and Word export work for drafts and approved documents, and the status (ENTWURF / FREIGEGEBEN) is printed on each.</p>
+    <p><strong>Daily report contents:</strong> staff and work per company, diary events, plan changes and decisions, correspondence, and the day's preventive vs reactive count.</p>
+    <p class="note">Each draft ends with a disclaimer that it is a drafting aid, not legal advice. The legal references should be checked by someone qualified before real use.</p>
+  </section>
+
+  <section id="architecture">
+    <h2>9. Architecture, tech stack and data model</h2>
+    <p>SiteFlow is a single Next.js app on Vercel. All logic except AI extraction runs in the browser, and state is kept in the browser's local storage, so there is no database to run for the MVP.</p>
+    <table>
+      <tr><th>Layer</th><th>Technology</th><th>Where in the code</th></tr>
+      <tr><td>Web app and hosting</td><td>Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, hosted on Vercel</td><td><code>src/app/page.tsx</code>, <code>src/components/*</code></td></tr>
+      <tr><td>API</td><td>Next.js route handlers: <code>POST /api/extract</code> (note → entry), <code>GET /api/status</code> (active AI engine)</td><td><code>src/app/api/*</code></td></tr>
+      <tr><td>AI extraction</td><td>Anthropic Messages API (tool use), rule-based fallback</td><td><code>src/app/api/extract/route.ts</code>, <code>src/lib/extract-rules.ts</code></td></tr>
+      <tr><td>Speech-to-text</td><td>Browser Web Speech API (de-DE, en-US)</td><td><code>src/lib/useSpeech.ts</code></td></tr>
+      <tr><td>Plan engine</td><td>Plain TypeScript: scheduling, impact, preventive scan, re-plan</td><td><code>src/lib/engine.ts</code></td></tr>
+      <tr><td>State</td><td>Zustand store persisted to localStorage</td><td><code>src/lib/store.ts</code></td></tr>
+      <tr><td>Documents</td><td>German VOB/B templates; PDF via jsPDF, Word via docx, both in the browser</td><td><code>src/lib/templates.ts</code>, <code>src/lib/export.ts</code></td></tr>
+      <tr><td>Demo data</td><td>4 teams, 5 personas, 14 tasks, 2 milestones, sample phrases</td><td><code>src/lib/seed.ts</code></td></tr>
+    </table>
+    <h3>Core data objects (<code>src/lib/types.ts</code>)</h3>
+    <ul>
+      <li><strong>Task:</strong> id, name, team, section, planned start, duration, crew, predecessors, milestone, status, delay days, minimum duration, readiness checklist.</li>
+      <li><strong>Readiness item:</strong> open or cleared, note, owner, due day.</li>
+      <li><strong>Diary entry:</strong> time, day, author, type, transcript, summary, fields (task, cause, responsible party, start time, expected delay, material, quantity, location…), photos, extraction engine.</li>
+      <li><strong>Notice:</strong> type, title, addressee, body, references, status (draft / approved), mode (preventive / reactive / report).</li>
+      <li><strong>Change record:</strong> who, task, before, after, reason, tasks moved, who was notified.</li>
+      <li><strong>Decision:</strong> preventive, reactive or change, with text and time.</li>
+      <li><strong>Notification:</strong> recipients, text, kind, read status.</li>
+      <li><strong>Settings:</strong> max 1 extra crew per day, max 2 overtime hours per day (not used by the re-plan), 8-hour day, 5-day preventive horizon, 3 alerts.</li>
+    </ul>
+  </section>
+
+  <section id="demo">
+    <h2>10. Demo script</h2>
+    <p>The demo is one simulated day, Tuesday 24 Nov 2026, and takes about 5 minutes. Press "Reset demo" first.</p>
+    <ol>
+      <li><strong>07:00, preventive.</strong> As Max Bauer (site manager), open Today. "Blockers to clear" shows three items: crane double-booked Thursday, slab drawings missing from the client, steel for section C unconfirmed. Click <strong>Draft request</strong> on the drawings, review it in Documents and <strong>Approve</strong>.</li>
+      <li><strong>10:00, reactive.</strong> Click the demo phrase <strong>Excavator idle (DE)</strong>, then <strong>Structure note</strong>. Answer the follow-up with <strong>1 day</strong> and <strong>Save to site diary</strong>.</li>
+      <li><strong>Re-plan.</strong> The proposal shows a 1-day slip on the foundation milestone without action, "milestones hold" with the re-plan, and about 72 idle crew-hours avoided. <strong>Approve re-plan.</strong></li>
+      <li><strong>Notice.</strong> Click <strong>Draft obstruction notice</strong>, edit a sentence, <strong>Approve</strong>, then <strong>PDF</strong> and <strong>Word</strong>.</li>
+      <li><strong>11:00, change control.</strong> Switch to Lena Weber (formwork). Under My tasks, open "Formwork slab floor 2 A", press <strong>+1 day</strong>, enter a reason and <strong>Apply change &amp; notify</strong>. Switch to Mehmet Kaya (rebar): he has a notification that his task moved and that the floor 2 milestone now slips 1 day.</li>
+      <li><strong>17:00, report.</strong> Switch back to the site manager, open Documents, click <strong>+ Daily report</strong> and export it.</li>
+    </ol>
+    <p><strong>In one line:</strong> one shared two-week plan for the whole site. The assistant clears blockers before they bite, re-plans in seconds when they do, and writes every notice and report along the way. The site manager just approves.</p>
+  </section>
+
+  <section id="deployment">
+    <h2>11. Deployment and operations</h2>
+    <p>The app runs on Vercel (Hobby plan, project <code>hack-tumai-construction</code>) and redeploys automatically on every push to <code>main</code>. The first build took 37 seconds.</p>
+    <h3>Environment variables</h3>
+    <p>Set them in Vercel → Project → Settings → Environment Variables, then redeploy.</p>
+    <table>
+      <tr><th>Variable</th><th>Required</th><th>Effect</th></tr>
+      <tr><td><code>ANTHROPIC_API_KEY</code></td><td>No</td><td>Turns on Claude extraction; without it the rule-based extractor is used</td></tr>
+      <tr><td><code>ANTHROPIC_MODEL</code></td><td>No</td><td>Overrides the default model <code>claude-sonnet-5-5</code></td></tr>
+    </table>
+    <h3>Run locally</h3>
+<pre><code>npm install
+npm run dev          # http://localhost:3000
+npm run check:engine # prints the engine's results for the demo scenario</code></pre>
+    <h3>Operational notes</h3>
+    <ul>
+      <li>Voice input needs HTTPS, which Vercel provides.</li>
+      <li>State lives in each browser's localStorage. Different devices do not share data, and clearing browser data or pressing "Reset demo" restores the starting state.</li>
+      <li>Only the note text, the speaker's name and role, and the task list are sent to the extraction API (and on to Anthropic when a key is set). Photos and documents stay in the browser.</li>
+    </ul>
+  </section>
+
+  <section id="roadmap">
+    <h2>12. Limitations and roadmap</h2>
+    <h3>Current limitations</h3>
+    <ul>
+      <li>No shared database or login: all personas share one browser, so each foreman cannot yet use their own phone.</li>
+      <li>Notifications appear in the app only (no push or email).</li>
+      <li>Voice input depends on the browser's speech recognition and does not work in Firefox.</li>
+      <li>The plan is a fixed synthetic two-week plan (14 tasks); there is no import from Excel or MS Project yet.</li>
+      <li>The re-plan heuristic does not model crew capacity limits per team, so a pulled-forward task can overlap another task of the same team.</li>
+      <li>Legal references in the templates have not been reviewed by a construction lawyer.</li>
+    </ul>
+    <h3>Roadmap</h3>
+    <table>
+      <tr><th>Stage</th><th>Goal</th><th>Main additions</th></tr>
+      <tr><td>Pilot-ready</td><td>One real site, one contractor</td><td>Shared database (e.g. Vercel Postgres or Supabase), login and roles, push and email notifications, plan import from Excel / MS Project, lawyer-reviewed VOB/B templates, EU hosting and GDPR basics</td></tr>
+      <tr><td>Product v1</td><td>Several sites per contractor</td><td>Claims manager view with evidence packs, defect management, offline capture, Whisper speech-to-text, constraint solver (OR-Tools) for larger plans, photo checks against reported progress</td></tr>
+      <tr><td>Scale</td><td>Learn across projects</td><td>Analytics on recurring blockers and late trades, preventive alerts that learn from history, client portal, ERP / document / scheduling integrations</td></tr>
+    </table>
+    <p><strong>Questions to validate before the pilot:</strong> will foremen really update the plan daily, do site managers trust drafted notices enough to send them, and who pays (contractor management or the site manager)?</p>
+  </section>
+
+  <section id="changelog">
+    <h2>13. Changelog</h2>
+    <p>Add a row whenever the platform or this document changes. Newest first.</p>
+    <table>
+      <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+      <tr><td>20 Nov 2026</td><td>v0.1</td><td>First MVP deployed to Vercel; platform explanation created</td></tr>
+    </table>
+  </section>
+</main>
+
+<footer>SiteFlow prototype · synthetic data · drafts are a drafting aid, not legal advice. Source: <code>public/platform.html</code> in the repo, served at <code>/platform.html</code>.</footer>
+</body>
+</html>

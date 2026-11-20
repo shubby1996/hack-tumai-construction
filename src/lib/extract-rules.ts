@@ -18,6 +18,7 @@ export interface ExtractResult {
   followUpQuestion?: string;
   engine: "open" | "claude" | "rules";
   model?: string;
+  fallbackReason?: string; // why the AI model was not used
 }
 
 const has = (text: string, words: string[]) => words.some((w) => text.includes(w));

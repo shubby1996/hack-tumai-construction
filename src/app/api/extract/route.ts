@@ -2,7 +2,7 @@
 // Turns a dictated or typed site note (plus optional photo descriptions) into a structured diary entry.
 // Engine priority: open-source model (LLM_BASE_URL) → Claude (ANTHROPIC_API_KEY) → rule-based fallback.
 
-import { aiConfig, openChatJson } from "@/lib/ai";
+import { aiConfig, openChatJsonWithFallback, shortReason } from "@/lib/ai";
 import { extractWithRules, type ExtractResult, type ExtractTask } from "@/lib/extract-rules";
 import type { EntryType, TeamId } from "@/lib/types";
 
@@ -108,11 +108,12 @@ export async function POST(req: Request) {
 
   try {
     if (cfg.engine === "open") {
-      const raw = await openChatJson<Partial<ExtractResult>>(cfg, cfg.textModel!, [
+      // If the text model is not available for this key, the vision model (also an LLM) takes over.
+      const { out: raw, model } = await openChatJsonWithFallback<Partial<ExtractResult>>(cfg, [cfg.textModel!, cfg.visionModel!], [
         { role: "system", content: `${RULES}\n\n${JSON_SPEC}` },
         { role: "user", content: userPrompt(body, text) },
       ]);
-      return Response.json({ ...sanitize(raw, tasks, "open"), model: cfg.textModel });
+      return Response.json({ ...sanitize(raw, tasks, "open"), model });
     }
 
     if (cfg.engine === "claude") {
@@ -136,6 +137,7 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     console.error(`extract: ${cfg.engine} failed, falling back to rules`, err);
+    return Response.json({ ...extractWithRules(text, tasks, body.personaTeam), fallbackReason: shortReason(err) });
   }
   return Response.json(extractWithRules(text, tasks, body.personaTeam));
 }

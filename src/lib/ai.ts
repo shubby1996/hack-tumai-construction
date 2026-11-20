@@ -35,6 +35,18 @@ export interface ChatMessage {
   content: string | Part[];
 }
 
+export class ModelError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+/** Groq's Qwen models think before answering unless told not to; thinking eats the free-tier token budget. */
+function reasoningParams(cfg: AiConfig, model: string): Record<string, string> {
+  const effort = process.env.LLM_REASONING_EFFORT ?? (cfg.baseUrl?.includes("api.groq.com") && /qwen/i.test(model) ? "none" : "");
+  return effort ? { reasoning_effort: effort } : {};
+}
+
 /** One call to an OpenAI-compatible /chat/completions endpoint, asking for JSON. */
 export async function openChatJson<T>(cfg: AiConfig, model: string, messages: ChatMessage[], timeoutMs = 60000): Promise<T> {
   const ctrl = new AbortController();
@@ -48,18 +60,53 @@ export async function openChatJson<T>(cfg: AiConfig, model: string, messages: Ch
         model,
         messages,
         temperature: 0.1,
-        // Room for models that reason before answering (e.g. Qwen on Groq); override with LLM_MAX_TOKENS.
-        max_tokens: Number(process.env.LLM_MAX_TOKENS) || 2048,
+        // Keep under free-tier output limits (Groq: 1,000 output tokens/min on some models); override with LLM_MAX_TOKENS.
+        max_tokens: Number(process.env.LLM_MAX_TOKENS) || 700,
         response_format: { type: "json_object" },
+        ...reasoningParams(cfg, model),
       }),
     });
-    if (!res.ok) throw new Error(`${cfg.baseUrl} ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    if (!res.ok) {
+      const body = await res.text();
+      let msg = body.slice(0, 300);
+      try {
+        msg = JSON.parse(body)?.error?.message ?? msg;
+      } catch {}
+      throw new ModelError(res.status, `${model}: ${res.status} ${msg}`);
+    }
     const data = await res.json();
     const text: string = data?.choices?.[0]?.message?.content ?? "";
     return parseJsonLoose<T>(text);
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Try models in order; move on only when a model is missing or not allowed for this account. */
+export async function openChatJsonWithFallback<T>(cfg: AiConfig, models: string[], messages: ChatMessage[]): Promise<{ out: T; model: string }> {
+  const list = Array.from(new Set(models.filter(Boolean)));
+  let lastErr: unknown;
+  for (const model of list) {
+    try {
+      return { out: await openChatJson<T>(cfg, model, messages), model };
+    } catch (err) {
+      lastErr = err;
+      if (!(err instanceof ModelError && (err.status === 404 || err.status === 403))) throw err;
+    }
+  }
+  throw lastErr;
+}
+
+/** Short, user-safe reason for showing in the UI when we fall back to rules. */
+export function shortReason(err: unknown): string {
+  if (err instanceof ModelError) {
+    if (err.status === 404) return "model not available for this API key";
+    if (err.status === 401) return "invalid API key";
+    if (err.status === 429) return "rate limit reached, try again in a minute";
+    return `model error ${err.status}`;
+  }
+  if (err instanceof Error && err.name === "AbortError") return "model timed out";
+  return "model unreachable or returned invalid JSON";
 }
 
 /** Small models sometimes wrap JSON in prose, code fences or <think> blocks. */
@@ -100,7 +147,7 @@ Rules: describe only what you can actually see. Do not guess causes, names, date
 export async function analysePhoto(dataUrl: string, context?: string): Promise<PhotoAnalysis> {
   const cfg = aiConfig();
   if (cfg.engine !== "open") return { caption: "", entryType: "note", findings: [], engine: "none" };
-  const out = await openChatJson<Partial<PhotoAnalysis>>(cfg, cfg.visionModel!, [
+  const { out, model } = await openChatJsonWithFallback<Partial<PhotoAnalysis>>(cfg, [cfg.visionModel!], [
     { role: "system", content: VISION_PROMPT },
     {
       role: "user",
@@ -116,6 +163,6 @@ export async function analysePhoto(dataUrl: string, context?: string): Promise<P
     findings: Array.isArray(out.findings) ? out.findings.map(String).slice(0, 6) : [],
     textInImage: out.textInImage ? String(out.textInImage) : "",
     engine: "open",
-    model: cfg.visionModel,
+    model,
   };
 }

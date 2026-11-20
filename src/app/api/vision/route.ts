@@ -2,7 +2,7 @@
 // Describes one site photo with an open-source vision-language model (e.g. Qwen3-VL via Ollama).
 // Returns { engine: "none" } when no open model is configured, so the UI simply skips the caption.
 
-import { analysePhoto } from "@/lib/ai";
+import { analysePhoto, shortReason } from "@/lib/ai";
 
 export async function POST(req: Request) {
   const { image, context } = (await req.json()) as { image?: string; context?: string };
@@ -12,6 +12,6 @@ export async function POST(req: Request) {
     return Response.json(await analysePhoto(image, context));
   } catch (err) {
     console.error("vision failed", err);
-    return Response.json({ caption: "", entryType: "note", findings: [], engine: "none", error: String(err).slice(0, 200) });
+    return Response.json({ caption: "", entryType: "note", findings: [], engine: "none", error: shortReason(err) });
   }
 }

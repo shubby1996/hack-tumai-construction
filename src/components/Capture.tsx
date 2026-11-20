@@ -15,6 +15,7 @@ interface Photo {
   url: string;
   status: "analysing" | "done" | "off" | "error";
   note?: string; // caption + findings from the vision model
+  reason?: string; // why analysis failed
 }
 
 const TYPES: EntryType[] = ["stoppage", "delivery", "defect", "incident", "meeting", "attendance", "progress", "instruction", "note"];
@@ -68,7 +69,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
         a.engine === "open" && a.caption
           ? [a.caption, ...(a.findings ?? []).map((f: string) => `Finding: ${f}`), a.textInImage ? `Text in photo: ${a.textInImage}` : ""].filter(Boolean).join(" ")
           : undefined;
-      setPhotos((ps) => ps.map((p) => (p.url === url ? { ...p, status: a.engine === "open" ? (note ? "done" : "error") : "off", note } : p)));
+      setPhotos((ps) => ps.map((p) => (p.url === url ? { ...p, status: a.engine === "open" ? (note ? "done" : "error") : a.error ? "error" : "off", note, reason: a.error } : p)));
     } catch {
       setPhotos((ps) => ps.map((p) => (p.url === url ? { ...p, status: "error" } : p)));
     }
@@ -200,7 +201,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
                       </>
                     )}
                     {p.status === "off" && <span className="text-stone-500">Photo attached. Photo understanding needs an open vision model (set LLM_BASE_URL).</span>}
-                    {p.status === "error" && <span className="text-red-600">Could not analyse this photo – it is still attached.</span>}
+                    {p.status === "error" && <span className="text-red-600">Could not analyse this photo{p.reason ? ` (${p.reason})` : ""} – it is still attached.</span>}
                     <button className="ml-2 text-stone-400 underline" onClick={() => setPhotos(photos.filter((_, j) => j !== i))}>
                       remove
                     </button>
@@ -229,6 +230,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
               {draft.engine === "open" ? `Open-source model · ${draft.model ?? ""}` : draft.engine === "claude" ? "Claude extraction" : "Rule-based extraction"}
             </Badge>
             <span className="text-xs text-stone-500">Check and correct before saving.</span>
+            {draft.fallbackReason && <span className="w-full text-xs text-amber-700">AI model not used ({draft.fallbackReason}) – the built-in rules filled this in.</span>}
           </div>
           <p className="rounded-lg bg-stone-50 p-2 text-xs italic text-stone-600">“{text || "(photo only)"}”</p>
           {photoNotes.length > 0 && <p className="rounded-lg bg-violet-50 p-2 text-xs text-violet-800">👁 {photoNotes.join(" · ")}</p>}

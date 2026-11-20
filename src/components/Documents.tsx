@@ -49,7 +49,7 @@ export function Documents({ toast }: { toast: (m: string) => void }) {
         <ul className="space-y-2">
           {notices.map((n) => (
             <li key={n.id}>
-              <button onClick={() => pick(n.id)} className={`w-full rounded-lg border p-3 text-left ${sel?.id === n.id ? "border-amber-400 bg-amber-50" : "border-stone-200 hover:bg-stone-50"}`}>
+              <button onClick={() => pick(n.id)} className={`w-full rounded-lg border p-3 text-left ${sel?.id === n.id ? "border-[#4573d2] bg-[#f5f8fe]" : "border-[#e8e6e3] hover:bg-[#f9f8f8]"}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-stone-900">{n.title}</span>
                   <Badge tone={n.status === "approved" ? "green" : "amber"}>{n.status}</Badge>
@@ -95,7 +95,7 @@ export function Documents({ toast }: { toast: (m: string) => void }) {
               value={sel.body}
               readOnly={sel.status !== "draft"}
               onChange={(e) => update(sel.id, e.target.value)}
-              className="h-[60vh] w-full rounded-lg border border-stone-300 bg-stone-50 p-3 font-mono text-[13px] leading-relaxed text-stone-900 focus:border-amber-500 focus:outline-none sm:p-4 lg:h-[560px]"
+              className="h-[60vh] w-full rounded-lg border border-stone-300 bg-stone-50 p-3 font-mono text-[13px] leading-relaxed text-stone-900 focus:border-[#4573d2] focus:outline-none sm:p-4 lg:h-[560px]"
             />
           </>
         )}

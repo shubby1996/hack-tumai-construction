@@ -127,6 +127,7 @@ export interface Notification {
   to: PersonaId[];
   text: string;
   kind: "change" | "replan" | "alert" | "notice";
+  from?: PersonaId; // who triggered it
   readBy: PersonaId[];
 }
 

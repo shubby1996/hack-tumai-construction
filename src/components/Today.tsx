@@ -3,22 +3,31 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { computeImpact, milestoneSlips, preventiveScan, schedule, withDelay } from "@/lib/engine";
-import { clock, dayLabel } from "@/lib/dates";
+import { dayLabel } from "@/lib/dates";
 import { PERSONAS } from "@/lib/seed";
 import { draftAnforderung, draftBedenken, draftBehinderung, draftMaengel, draftMehrkosten } from "@/lib/templates";
 import type { DiaryEntry, Notice } from "@/lib/types";
 import { Capture } from "./Capture";
 import { ReplanPanel } from "./Replan";
-import { TaskEditor } from "./TaskEditor";
-import { Badge, Button, Card } from "./ui";
+import { canEdit, statusTone } from "./TaskEditor";
+import { Avatar, Badge, Button, Card, CheckCircle } from "./ui";
 
-export function Today({ goDocs, toast }: { goDocs: () => void; toast: (m: string) => void }) {
+export function Today({ goDocs, toast, onOpen }: { goDocs: () => void; toast: (m: string) => void; onOpen: (id: string) => void }) {
   const [last, setLast] = useState<DiaryEntry | null>(null);
-  const persona = useStore((s) => s.persona);
+  const { persona, today } = useStore();
   const startReplan = useStore((s) => s.startReplan);
-  const isSM = persona === "site-manager";
+  const me = PERSONAS.find((p) => p.id === persona)!;
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
+    <div>
+      <div className="mb-6 text-center">
+        <p className="text-sm text-[#6d6e6f]">{dayLabel(today)} 2026</p>
+        <h1 className="mt-1 text-2xl font-normal text-[#1e1f21] sm:text-3xl">
+          {greet}, {me.name.split(" ")[0]}
+        </h1>
+      </div>
     <div className="grid gap-4 lg:grid-cols-5">
       <div className="space-y-4 lg:col-span-3">
         <Capture
@@ -30,13 +39,13 @@ export function Today({ goDocs, toast }: { goDocs: () => void; toast: (m: string
         />
         <ReplanPanel />
         {last && <NextSteps entry={last} goDocs={goDocs} toast={toast} onClose={() => setLast(null)} />}
-        {!isSM && <MyTasks />}
       </div>
       <div className="space-y-4 lg:col-span-2">
+        <MyTasks onOpen={onOpen} />
         <Alerts goDocs={goDocs} toast={toast} />
-        <Notifications />
         <Kpis />
       </div>
+    </div>
     </div>
   );
 }
@@ -134,26 +143,6 @@ function Alerts({ goDocs, toast }: { goDocs: () => void; toast: (m: string) => v
   );
 }
 
-function Notifications() {
-  const { notifications, persona } = useStore();
-  const markRead = useStore((s) => s.markRead);
-  const mine = notifications.filter((n) => n.to.includes(persona)).slice(0, 8);
-  const unread = mine.filter((n) => !n.readBy.includes(persona)).length;
-  return (
-    <Card title={<span className="flex items-center gap-2">🔔 Notifications {unread > 0 && <Badge tone="red">{unread} new</Badge>}</span>} right={unread > 0 && <Button variant="ghost" onClick={markRead}>Mark read</Button>}>
-      {mine.length === 0 && <p className="text-sm text-stone-500">No notifications yet.</p>}
-      <ul className="space-y-2">
-        {mine.map((n) => (
-          <li key={n.id} className={`rounded-lg p-2.5 text-sm ${n.readBy.includes(persona) ? "bg-stone-50 text-stone-500" : "bg-blue-50 text-stone-800"}`}>
-            <span className="mr-1 text-xs text-stone-400">{clock(n.createdAt)}</span>
-            {n.text}
-          </li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
-
 function Kpis() {
   const { decisions, today, tasks } = useStore();
   const d = decisions.filter((x) => x.day === today);
@@ -189,32 +178,38 @@ function Kpis() {
   );
 }
 
-function MyTasks() {
-  const { tasks, persona } = useStore();
+function MyTasks({ onOpen }: { onOpen: (id: string) => void }) {
+  const { tasks, persona, today } = useStore();
+  const changeTask = useStore((s) => s.changeTask);
   const sched = schedule(tasks);
-  const mine = tasks.filter((t) => t.team === persona).sort((a, b) => sched[a.id].es - sched[b.id].es);
-  const [open, setOpen] = useState<string | null>(null);
-  const me = PERSONAS.find((p) => p.id === persona);
+  const isSM = persona === "site-manager";
+  // Foremen: their own open tasks. Site manager: everything active in the next 2 working days.
+  const list = tasks
+    .filter((t) => t.status !== "done")
+    .filter((t) => (isSM ? sched[t.id].es <= today + 2 && sched[t.id].ef >= today : t.team === persona))
+    .sort((a, b) => sched[a.id].es - sched[b.id].es)
+    .slice(0, 6);
   return (
-    <Card title={`My tasks · ${me?.company}`}>
-      <ul className="divide-y divide-stone-100">
-        {mine.map((t) => (
-          <li key={t.id} className="py-2">
-            <button className="flex w-full items-center justify-between text-left" onClick={() => setOpen(open === t.id ? null : t.id)}>
-              <span className="text-sm font-medium text-stone-900">
-                {t.name} {t.section}
-              </span>
-              <span className="text-xs text-stone-500">
-                {dayLabel(sched[t.id].es)} – {dayLabel(sched[t.id].ef)} <Badge tone={t.status === "blocked" ? "red" : t.status === "done" ? "green" : "stone"}>{t.status}</Badge>
-              </span>
-            </button>
-            {open === t.id && (
-              <div className="mt-3">
-                <TaskEditor key={t.id} task={t} onDone={() => setOpen(null)} />
+    <Card title={isSM ? "On site now and next" : "My tasks"} right={<span className="text-xs text-[#6d6e6f]">{list.length} open</span>}>
+      <ul className="-mx-2">
+        {list.map((t) => {
+          const foreman = PERSONAS.find((p) => p.team === t.team)!;
+          const late = t.status === "blocked" || sched[t.id].ef < today;
+          return (
+            <li key={t.id}>
+              <div role="button" tabIndex={0} onClick={() => onOpen(t.id)} onKeyDown={(e) => e.key === "Enter" && onOpen(t.id)} className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 hover:bg-[#f9f8f8]">
+                <CheckCircle done={false} disabled={!canEdit(persona, t)} onClick={() => changeTask(t.id, { status: "done" }, "Marked complete")} />
+                <span className="min-w-0 flex-1 truncate text-sm text-[#1e1f21]">
+                  {t.name} {t.section}
+                </span>
+                {t.status !== "planned" && <Badge tone={statusTone(t.status)}>{t.status}</Badge>}
+                <span className={`shrink-0 text-xs ${late ? "text-[#b42318]" : "text-[#6d6e6f]"}`}>{dayLabel(sched[t.id].ef)}</span>
+                {isSM && <Avatar id={foreman.id} name={foreman.name} size={20} />}
               </div>
-            )}
-          </li>
-        ))}
+            </li>
+          );
+        })}
+        {list.length === 0 && <li className="px-2 py-3 text-sm text-[#6d6e6f]">Nothing open. 🎉</li>}
       </ul>
     </Card>
   );

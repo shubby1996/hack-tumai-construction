@@ -1,28 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
-import { dayLabel } from "@/lib/dates";
 import { PERSONAS, PROJECT } from "@/lib/seed";
 import type { PersonaId } from "@/lib/types";
 import { Today } from "@/components/Today";
-import { Plan } from "@/components/Plan";
+import { Timeline } from "@/components/Plan";
+import { TaskList } from "@/components/TaskList";
+import { Board } from "@/components/Board";
+import { TaskDrawer } from "@/components/TaskDrawer";
+import { Inbox } from "@/components/Inbox";
 import { Diary } from "@/components/Diary";
 import { Documents } from "@/components/Documents";
 import { PhoneQr } from "@/components/PhoneQr";
-import { Badge } from "@/components/ui";
+import { Avatar } from "@/components/ui";
 
-type Tab = "today" | "plan" | "diary" | "docs";
+type View = "home" | "mytasks" | "inbox" | "project";
+type ProjTab = "list" | "board" | "timeline" | "diary" | "docs";
 
-const TAB_ICON: Record<Tab, string> = { today: "🏠", plan: "📅", diary: "📒", docs: "📄" };
+const PROJ_TABS: { id: ProjTab; label: string }[] = [
+  { id: "list", label: "List" },
+  { id: "board", label: "Board" },
+  { id: "timeline", label: "Timeline" },
+  { id: "diary", label: "Diary" },
+  { id: "docs", label: "Documents" },
+];
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
-  const [tab, setTab] = useState<Tab>("today");
+  const [view, setView] = useState<View>("home");
+  const [projTab, setProjTab] = useState<ProjTab>("list");
+  const [openTask, setOpenTask] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // phones
   const [msg, setMsg] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
   const [engine, setEngine] = useState<{ extraction: string; model?: string | null; vision?: string | null }>({ extraction: "…" });
-  const { persona, today, notices, entries, notifications } = useStore();
+  const { persona, notices, notifications } = useStore();
   const setPersona = useStore((s) => s.setPersona);
   const reset = useStore((s) => s.reset);
 
@@ -40,23 +53,19 @@ export default function Home() {
     setMsg(m);
     setTimeout(() => setMsg(null), 2500);
   };
-
-  const go = (t: Tab) => {
-    setTab(t);
+  const go = (v: View, tab?: ProjTab) => {
+    setView(v);
+    if (tab) setProjTab(tab);
+    setSidebarOpen(false);
     window.scrollTo({ top: 0 });
   };
 
-  if (!mounted) return <div className="p-8 text-stone-500">Loading…</div>;
+  if (!mounted) return <div className="p-8 text-[#6d6e6f]">Loading…</div>;
 
   const me = PERSONAS.find((p) => p.id === persona)!;
   const unread = notifications.filter((n) => n.to.includes(persona) && !n.readBy.includes(persona)).length;
   const drafts = notices.filter((n) => n.status === "draft").length;
-  const tabs: { id: Tab; label: string; count?: number }[] = [
-    { id: "today", label: "Today", count: unread || undefined },
-    { id: "plan", label: "Plan" },
-    { id: "diary", label: "Diary", count: entries.length || undefined },
-    { id: "docs", label: "Documents", count: drafts || undefined },
-  ];
+  const isSM = persona === "site-manager";
   const engineLabel =
     engine.extraction === "open"
       ? `open-source · ${engine.model}${engine.vision && engine.vision !== engine.model ? ` + ${engine.vision}` : ""}`
@@ -66,104 +75,159 @@ export default function Home() {
           ? "rule-based (no model configured)"
           : "…";
 
-  return (
-    <div className="min-h-screen bg-stone-100">
-      <header className="sticky top-0 z-10 border-b border-stone-800 bg-stone-900 text-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500 font-black text-stone-950">S</span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold leading-tight">SiteFlow</p>
-              <p className="truncate text-xs leading-tight text-stone-400">{PROJECT.name}</p>
-            </div>
-          </div>
-          <span className="rounded-md bg-stone-800 px-2 py-1 text-xs text-amber-300">📅 {dayLabel(today)}</span>
-          <span className="hidden text-xs text-stone-400 lg:inline">AI: {engineLabel}</span>
-          <div className="ml-auto hidden items-center gap-2 sm:flex">
-            <button onClick={() => setShowQr(true)} className="rounded-lg px-2 py-1.5 text-xs text-stone-300 hover:bg-stone-800 hover:text-white">
-              📱 Open on phone
+  const title = view === "home" ? "Home" : view === "mytasks" ? "My tasks" : view === "inbox" ? "Inbox" : PROJECT.name;
+
+  const sidebar = (
+    <nav className="flex h-full flex-col bg-[#1e1f21] text-[#f5f4f3]">
+      <div className="flex items-center gap-2 px-4 py-4">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#ef6b62] text-sm font-black text-white">S</span>
+        <span className="text-base font-semibold">SiteFlow</span>
+        <button className="ml-auto rounded p-1 text-[#a2a0a2] hover:bg-white/10 lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+          ✕
+        </button>
+      </div>
+      <div className="px-3">
+        <button onClick={() => go("home")} className="mb-3 flex w-full items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6b62] text-xs text-white">+</span> Create note
+        </button>
+        <SideItem icon="🏠" label="Home" active={view === "home"} onClick={() => go("home")} />
+        <SideItem icon="✔︎" label={isSM ? "All open tasks" : "My tasks"} active={view === "mytasks"} onClick={() => go("mytasks")} />
+        <SideItem icon="🔔" label="Inbox" count={unread} active={view === "inbox"} onClick={() => go("inbox")} />
+      </div>
+      <div className="mt-5 px-3">
+        <p className="px-2 pb-1 text-xs font-medium text-[#a2a0a2]">Projects</p>
+        <button onClick={() => go("project", "list")} className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${view === "project" ? "bg-white/15" : "hover:bg-white/10"}`}>
+          <span className="h-3 w-3 rounded-[4px] bg-[#4573d2]" />
+          <span className="truncate">{PROJECT.name}</span>
+        </button>
+        <div className="ml-5 mt-0.5 space-y-0.5">
+          {PROJ_TABS.map((t) => (
+            <button key={t.id} onClick={() => go("project", t.id)} className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-xs ${view === "project" && projTab === t.id ? "text-white" : "text-[#a2a0a2] hover:text-white"}`}>
+              {t.label}
+              {t.id === "docs" && drafts > 0 && <span className="rounded-full bg-[#ef6b62] px-1.5 text-[10px] text-white">{drafts}</span>}
             </button>
-            <button
-              onClick={() => {
-                if (confirm("Reset the demo to its starting state?")) reset();
-              }}
-              className="rounded-lg px-2 py-1.5 text-xs text-stone-400 hover:bg-stone-800 hover:text-white"
-            >
-              Reset demo
-            </button>
-          </div>
-          {/* Persona switch: full width on phones */}
-          <label className="flex w-full items-center gap-2 sm:w-auto">
-            <span className="text-xs text-stone-400">Acting as</span>
-            <select
-              value={persona}
-              onChange={(e) => setPersona(e.target.value as PersonaId)}
-              className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-800 px-2 py-2 text-base text-white sm:flex-none sm:py-1.5 sm:text-sm"
-            >
+          ))}
+        </div>
+      </div>
+      <div className="mt-auto space-y-2 border-t border-white/10 p-3">
+        <label className="block text-xs text-[#a2a0a2]">
+          Acting as
+          <span className="mt-1 flex items-center gap-2 rounded-md bg-white/10 px-2 py-1.5">
+            <Avatar id={me.id} name={me.name} size={22} />
+            <select value={persona} onChange={(e) => setPersona(e.target.value as PersonaId)} className="min-w-0 flex-1 bg-transparent text-base text-white outline-none sm:text-sm">
               {PERSONAS.map((p) => (
-                <option key={p.id} value={p.id}>
+                <option key={p.id} value={p.id} className="text-black">
                   {p.name} – {p.role}
                 </option>
               ))}
             </select>
-          </label>
-        </div>
-        {/* Top tabs on tablet/desktop */}
-        <nav className="mx-auto hidden max-w-7xl gap-1 px-4 sm:flex">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => go(t.id)}
-              className={`flex items-center gap-1.5 rounded-t-lg px-4 py-2 text-sm font-medium ${tab === t.id ? "bg-stone-100 text-stone-900" : "text-stone-300 hover:text-white"}`}
-            >
-              {t.label}
-              {t.count !== undefined && <span className="rounded-full bg-amber-500 px-1.5 text-xs font-semibold text-stone-950">{t.count}</span>}
-            </button>
-          ))}
-        </nav>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-3 pb-24 pt-3 sm:px-4 sm:pb-8 sm:pt-4">
-        <p className="mb-3 text-sm text-stone-600">
-          {me.name} · <span className="text-stone-500">{me.role}</span>{" "}
-          {persona === "site-manager" ? <Badge tone="amber">approves</Badge> : <Badge tone="blue">updates own tasks</Badge>}
-        </p>
-        {tab === "today" && <Today goDocs={() => go("docs")} toast={toast} />}
-        {tab === "plan" && <Plan />}
-        {tab === "diary" && <Diary />}
-        {tab === "docs" && <Documents toast={toast} />}
-        <div className="mt-8 space-y-2 text-center text-xs text-stone-400">
-          <p className="lg:hidden">AI: {engineLabel}</p>
-          <p>
-            Prototype · synthetic data · drafts are a drafting aid, not legal advice – the site manager reviews everything before sending. ·{" "}
-            <a href="/platform.html" className="underline hover:text-stone-600">
-              How the platform works
-            </a>
-          </p>
+          </span>
+        </label>
+        <p className="text-[11px] leading-snug text-[#a2a0a2]">AI: {engineLabel}</p>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#a2a0a2]">
+          <button onClick={() => setShowQr(true)} className="hidden hover:text-white sm:inline">
+            📱 Open on phone
+          </button>
+          <a href="/platform.html" className="hover:text-white">
+            How it works
+          </a>
           <button
             onClick={() => {
               if (confirm("Reset the demo to its starting state?")) reset();
             }}
-            className="underline sm:hidden"
+            className="hover:text-white"
           >
             Reset demo
           </button>
         </div>
+      </div>
+    </nav>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#f9f8f8] lg:pl-60">
+      {/* Sidebar: fixed on desktop, slide-in on phones */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 lg:block">{sidebar}</aside>
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85%]">{sidebar}</aside>
+        </div>
+      )}
+
+      {/* Top bar */}
+      <header className="sticky top-0 z-20 border-b border-[#e8e6e3] bg-white">
+        <div className="flex items-center gap-3 px-3 pt-3 sm:px-6">
+          <button className="rounded-md p-1.5 text-[#6d6e6f] hover:bg-[#f5f4f3] lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+            ☰
+          </button>
+          {view === "project" && <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#4573d2] text-sm text-white">🏗</span>}
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-medium text-[#1e1f21] sm:text-xl">{title}</h1>
+            {view === "project" && <p className="truncate text-xs text-[#6d6e6f]">{PROJECT.address} · {PROJECT.contractor} · two-week lookahead</p>}
+          </div>
+          <span className="ml-auto flex items-center gap-2">
+            <span className="hidden text-xs text-[#6d6e6f] md:inline">{me.role}</span>
+            <Avatar id={me.id} name={me.name} size={30} />
+          </span>
+        </div>
+        {view === "project" ? (
+          <div className="mt-2 flex gap-4 overflow-x-auto px-3 sm:px-6">
+            {PROJ_TABS.map((t) => (
+              <button key={t.id} onClick={() => setProjTab(t.id)} className={`shrink-0 border-b-2 pb-2 text-sm ${projTab === t.id ? "border-[#1e1f21] font-medium text-[#1e1f21]" : "border-transparent text-[#6d6e6f] hover:text-[#1e1f21]"}`}>
+                {t.label}
+                {t.id === "docs" && drafts > 0 && <span className="ml-1 rounded-full bg-[#ef6b62] px-1.5 text-[10px] text-white">{drafts}</span>}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="h-3" />
+        )}
+      </header>
+
+      <main className="mx-auto max-w-6xl px-3 pb-24 pt-5 sm:px-6 lg:pb-10">
+        {view === "home" && <Today goDocs={() => go("project", "docs")} toast={toast} onOpen={setOpenTask} />}
+        {view === "mytasks" && <TaskList onOpen={setOpenTask} only={isSM ? undefined : persona} />}
+        {view === "inbox" && <Inbox />}
+        {view === "project" && projTab === "list" && <TaskList onOpen={setOpenTask} />}
+        {view === "project" && projTab === "board" && <Board onOpen={setOpenTask} />}
+        {view === "project" && projTab === "timeline" && <Timeline onOpen={setOpenTask} />}
+        {view === "project" && projTab === "diary" && <Diary />}
+        {view === "project" && projTab === "docs" && <Documents toast={toast} />}
+        <p className="mt-10 text-center text-xs text-[#9ca0a5]">Prototype · synthetic data · drafts are a drafting aid, not legal advice – the site manager reviews everything before sending.</p>
       </main>
 
-      {/* Bottom tab bar on phones (thumb-friendly) */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden">
-        {tabs.map((t) => (
-          <button key={t.id} onClick={() => go(t.id)} className={`relative flex flex-col items-center gap-0.5 py-2 text-xs ${tab === t.id ? "font-semibold text-amber-600" : "text-stone-500"}`}>
-            <span className="text-lg leading-none">{TAB_ICON[t.id]}</span>
-            {t.label}
-            {t.count !== undefined && <span className="absolute right-[22%] top-1 rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-stone-950">{t.count}</span>}
-          </button>
-        ))}
+      {/* Bottom tab bar on phones */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-[#e8e6e3] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden">
+        <BottomTab icon="🏠" label="Home" active={view === "home"} onClick={() => go("home")} />
+        <BottomTab icon="✔︎" label="My tasks" active={view === "mytasks"} onClick={() => go("mytasks")} />
+        <BottomTab icon="🔔" label="Inbox" count={unread} active={view === "inbox"} onClick={() => go("inbox")} />
+        <BottomTab icon="🏗" label="Project" count={drafts || undefined} active={view === "project"} onClick={() => go("project", projTab)} />
       </nav>
 
+      {openTask && <TaskDrawer taskId={openTask} onClose={() => setOpenTask(null)} />}
       {showQr && <PhoneQr onClose={() => setShowQr(false)} />}
-      {msg && <div className="fixed bottom-20 left-1/2 z-30 -translate-x-1/2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white shadow-lg sm:bottom-4">{msg}</div>}
+      {msg && <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-[#1e1f21] px-4 py-2 text-sm text-white shadow-lg lg:bottom-6">{msg}</div>}
     </div>
+  );
+}
+
+function SideItem({ icon, label, active, onClick, count }: { icon: string; label: string; active?: boolean; onClick: () => void; count?: number }) {
+  return (
+    <button onClick={onClick} className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm ${active ? "bg-white/15 text-white" : "text-[#e6e4e2] hover:bg-white/10"}`}>
+      <span className="w-4 text-center text-xs">{icon}</span>
+      <span className="flex-1">{label}</span>
+      {count ? <span className="rounded-full bg-[#ef6b62] px-1.5 text-[11px] text-white">{count}</span> : null}
+    </button>
+  );
+}
+
+function BottomTab({ icon, label, active, onClick, count }: { icon: ReactNode; label: string; active?: boolean; onClick: () => void; count?: number }) {
+  return (
+    <button onClick={onClick} className={`relative flex flex-col items-center gap-0.5 py-2 text-xs ${active ? "font-semibold text-[#ef6b62]" : "text-[#6d6e6f]"}`}>
+      <span className="text-lg leading-none">{icon}</span>
+      {label}
+      {count ? <span className="absolute right-[22%] top-1 rounded-full bg-[#ef6b62] px-1.5 text-[10px] font-semibold text-white">{count}</span> : null}
+    </button>
   );
 }

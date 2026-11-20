@@ -148,7 +148,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
               onClick={() => (speech.listening ? speech.stop() : speech.start())}
               disabled={!speech.supported}
               title={speech.supported ? "Dictate" : "Speech input needs Chrome, Edge or Safari"}
-              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl shadow-md transition active:scale-95 ${speech.listening ? "animate-pulse bg-red-600 text-white" : "bg-amber-500 text-stone-950 hover:bg-amber-400"} disabled:bg-stone-200 disabled:text-stone-400`}
+              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl shadow-md transition active:scale-95 ${speech.listening ? "animate-pulse bg-red-600 text-white" : "bg-[#ef6b62] text-white hover:bg-[#e2564d]"} disabled:bg-stone-200 disabled:text-stone-400`}
             >
               {speech.listening ? "■" : "🎙"}
             </button>
@@ -214,7 +214,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
             <p className="mb-1.5 text-xs text-stone-500">Demo phrases</p>
             <div className="flex flex-wrap gap-1.5">
               {samples.map((s) => (
-                <button key={s.label} onClick={() => setText(s.text)} className="rounded-full border border-stone-200 px-2.5 py-1 text-xs text-stone-600 hover:border-amber-400 hover:bg-amber-50">
+                <button key={s.label} onClick={() => setText(s.text)} className="rounded-full border border-stone-200 px-2.5 py-1 text-xs text-stone-600 hover:border-[#ef6b62] hover:bg-[#fdf3f2]">
                   {s.label}
                 </button>
               ))}

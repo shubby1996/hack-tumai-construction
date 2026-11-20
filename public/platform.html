@@ -44,7 +44,7 @@
     <div class="logo">S</div>
     <div>
       <h1>SiteFlow – Platform Explanation</h1>
-      <p>Tum.ai Construction Hack · Challenge B · last updated 20 Nov 2026 (open-source AI) · <span id="ver">v0.3</span></p>
+      <p>Tum.ai Construction Hack · Challenge B · last updated 20 Nov 2026 (open-source AI) · <span id="ver">v0.4</span></p>
     </div>
   </div>
 </header>
@@ -155,34 +155,36 @@
 
   <section id="features">
     <h2>5. Features by screen</h2>
-    <p>The app has four tabs: across the top on desktop, and as a bottom tab bar on phones. A persona switch sits in the header. On desktop the header also has "Open on phone" (a QR code to open the app on a phone) and "Reset demo"; on phones, Reset is at the bottom of the page. The app can be added to the phone home screen.</p>
-    <h3>Today (the main working screen)</h3>
+    <p>The interface follows familiar work-management patterns: a dark left sidebar, a project with List, Board and Timeline views, round completion checkboxes, assignee avatars, and a task detail panel that slides in from the right. On phones the sidebar becomes a slide-in menu and a bottom tab bar (Home, My tasks, Inbox, Project) appears.</p>
+    <h3>Sidebar</h3>
     <ul>
-      <li><strong>Capture a site situation:</strong> a large record button for voice (German or English), a text box, photo upload and one-click demo phrases.</li>
-      <li><strong>Photo understanding:</strong> each photo is described by a small open vision model (caption, visible findings, text in the photo). The description feeds the structured entry, and a photo alone can start a note.</li>
-      <li><strong>Review before saving:</strong> the note comes back as a structured entry (type, task, cause, responsible party, start time, expected delay). Missing facts are highlighted and the assistant asks one follow-up question with quick-answer chips.</li>
-      <li><strong>Suggested next steps:</strong> after saving, the matching notice is offered (for example an obstruction notice after a stoppage).</li>
-      <li><strong>Re-plan proposal:</strong> after a stoppage, the knock-on effect, the milestone slip with and without action, idle crew-hours avoided and each proposed action with its reason. Approve or reject.</li>
-      <li><strong>Blockers to clear:</strong> the top 3 open readiness items in the next 5 working days, with "Draft request" and "Mark cleared".</li>
-      <li><strong>Notifications</strong> for the current persona, and <strong>Today at a glance:</strong> preventive vs reactive decisions and milestone status.</li>
-      <li><strong>My tasks</strong> (foremen only): own tasks with an editor to shift dates, change duration or status, with a live impact preview.</li>
+      <li><strong>Create note</strong>, <strong>Home</strong>, <strong>My tasks</strong> (site manager: all open tasks), <strong>Inbox</strong> with unread count.</li>
+      <li><strong>Projects:</strong> the site (Wohnanlage Lindenhof, Haus 2) with List, Board, Timeline, Diary and Documents.</li>
+      <li>At the bottom: <strong>Acting as</strong> persona switch with avatar, active AI models, "Open on phone" (QR code), "How it works" and "Reset demo".</li>
     </ul>
-    <h3>Plan</h3>
+    <h3>Home</h3>
     <ul>
-      <li>Two-week Gantt chart (Mon 23 Nov – Fri 4 Dec 2026) grouped by team, with crew size, readiness warnings, milestone markers, delays striped red and blocked tasks outlined. On phones a list view (dates, crew, status, open items) is the default, with the timeline one tap away.</li>
-      <li>Click a task to see readiness details and change it.</li>
+      <li>Greeting with the demo date.</li>
+      <li><strong>Capture a site situation:</strong> voice (German or English), text, camera or gallery photos, demo phrases. Photos are described by the vision model; the note comes back as a structured entry with one follow-up question for missing facts.</li>
+      <li><strong>Re-plan proposal</strong> after a stoppage (shown first and scrolled into view), then <strong>suggested next steps</strong> with the matching notice.</li>
+      <li><strong>My tasks</strong> (site manager: "On site now and next"), <strong>Blockers to clear</strong> (preventive, top 3 in the next 5 working days) and <strong>Today at a glance</strong> (preventive vs reactive decisions, milestone status).</li>
     </ul>
-    <h3>Diary</h3>
+    <h3>Project views</h3>
     <ul>
-      <li>Chronological site diary with every field, the original transcript and photos.</li>
-      <li>Decision log tagged preventive, reactive or change.</li>
-      <li>Change log (audit trail): who changed what, old and new values, reason, tasks moved and who was notified.</li>
+      <li><strong>List:</strong> sections per subcontractor team (collapsible), rows with completion checkbox, assignee avatar, due date (red when late or blocked), status and readiness.</li>
+      <li><strong>Board:</strong> columns Planned, In progress, Blocked, Done. Drag cards between columns on desktop, or use the card menu on phones. Cards show team tag, open readiness items, delay, assignee and due date.</li>
+      <li><strong>Timeline:</strong> two-week Gantt (Mon 23 Nov – Fri 4 Dec 2026) with milestones, delays striped and blocked tasks outlined.</li>
+      <li><strong>Diary:</strong> site diary with transcripts, photo descriptions and photos; decision log; change log (audit trail).</li>
+      <li><strong>Documents:</strong> drafts and approved documents, editor, approve (site manager only), PDF and Word export, daily report.</li>
     </ul>
-    <h3>Documents</h3>
+    <h3>Task detail panel</h3>
     <ul>
-      <li>List of drafts and approved documents, tagged preventive, reactive or report.</li>
-      <li>Editor for drafts; approved documents are locked.</li>
-      <li>Approve (site manager only), export to PDF and Word, and "+ Daily report".</li>
+      <li>Opens from any task (List, Board, Timeline, Home). Shows assignee, dates, status, team and section, crew, dependencies, milestone and readiness, plus recent activity.</li>
+      <li><strong>Mark complete</strong>, clear readiness items, and change planned start, duration or status with a live impact preview ("moves R3, C4 … notifies … milestone slips"). Every change is logged and notifies the affected people.</li>
+    </ul>
+    <h3>Inbox</h3>
+    <ul>
+      <li>Notifications for the current persona with the author's avatar: task changes and their knock-on effects, approved re-plans, cleared blockers, notes logged by foremen. Filter Activity / Unread, mark all as read.</li>
     </ul>
   </section>
 
@@ -347,6 +349,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
     <p>Add a row whenever the platform or this document changes. Newest first.</p>
     <table>
       <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+      <tr><td>21 Nov 2026</td><td>v0.4</td><td>Work-management style UI: dark sidebar, project with List / Board (drag and drop) / Timeline views, task detail panel, Inbox with authors, completion checkboxes and avatars, greeting on Home, coral accent</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.3</td><td>Mobile-friendly: bottom tab bar on phones, larger touch targets, 16 px inputs (no iOS zoom), camera and gallery photo buttons, list view of the plan on phones, re-plan scrolls into view, "Open on phone" QR code, installable to the home screen. Live app switched to Groq (llama-3.1-8b-instant + qwen/qwen3.8-27b)</td></tr>
       <tr><td>20 Nov 2026</td><td>v0.2</td><td>Open-source AI: any OpenAI-compatible endpoint (Ollama, Groq …), default Qwen3-VL 4B for notes and photos; photo understanding (<code>/api/vision</code>) feeding notes and notices; Claude now optional</td></tr>
       <tr><td>20 Nov 2026</td><td>v0.1</td><td>First MVP deployed to Vercel; platform explanation created</td></tr>

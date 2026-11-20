@@ -73,7 +73,7 @@ export const useStore = create<State>()(
           tasks: progressDone ? s.tasks.map((t) => (t.id === e.fields.taskId ? { ...t, status: "done" as const } : t)) : s.tasks,
           notifications:
             e.author !== "site-manager"
-              ? [{ id: uid("NT"), createdAt: now(), to: ["site-manager"], text: `${personaName(e.author)} logged: ${e.summary}`, kind: "alert", readBy: [] }, ...s.notifications]
+              ? [{ id: uid("NT"), createdAt: now(), to: ["site-manager"], from: e.author, text: `${personaName(e.author)} logged: ${e.summary}`, kind: "alert", readBy: [] }, ...s.notifications]
               : s.notifications,
         }));
       },
@@ -106,7 +106,7 @@ export const useStore = create<State>()(
             ...s.decisions,
           ],
           notifications: [
-            { id: uid("NT"), createdAt: now(), to: notify, kind: "replan", readBy: [], text: `Re-plan approved by ${personaName(s.persona)}: ${proposal.actions.map((a) => a.reason).join(" ")}` },
+            { id: uid("NT"), createdAt: now(), to: notify, from: s.persona, kind: "replan", readBy: [], text: `Re-plan approved by ${personaName(s.persona)}: ${proposal.actions.map((a) => a.reason).join(" ")}` },
             ...s.notifications,
           ],
         });
@@ -123,7 +123,7 @@ export const useStore = create<State>()(
           tasks: after,
           pending: null,
           decisions: [{ id: uid("D"), createdAt: now(), day: s.today, by: s.persona, kind: "reactive", text: `Delay of ${proposal.delayDays} day(s) recorded on ${proposal.triggerTaskId}; proposed re-plan rejected.` }, ...s.decisions],
-          notifications: [{ id: uid("NT"), createdAt: now(), to: impact.notify, kind: "change", readBy: [], text: `Delay recorded on ${proposal.triggerTaskId}; tasks moved: ${impact.changedTaskIds.join(", ") || "none"}.` }, ...s.notifications],
+          notifications: [{ id: uid("NT"), createdAt: now(), to: impact.notify, from: s.persona, kind: "change", readBy: [], text: `Delay recorded on ${proposal.triggerTaskId}; tasks moved: ${impact.changedTaskIds.join(", ") || "none"}.` }, ...s.notifications],
         });
       },
 
@@ -152,7 +152,7 @@ export const useStore = create<State>()(
         set({
           tasks: s.tasks.map((x) => (x.id === taskId ? { ...x, readiness: { ...x.readiness, [key]: { ...x.readiness[key], state: "cleared" } } } : x)),
           decisions: [{ id: uid("D"), createdAt: now(), day: s.today, by: s.persona, kind: "preventive", text: `Blocker cleared on ${t.name} ${t.section}: ${key} (${x(t.readiness[key]?.note)})` }, ...s.decisions],
-          notifications: [{ id: uid("NT"), createdAt: now(), to: Array.from(new Set<PersonaId>(["site-manager", team.id])), kind: "alert", readBy: [], text: `${personaName(s.persona)} cleared "${key}" for ${t.name} ${t.section}.` }, ...s.notifications],
+          notifications: [{ id: uid("NT"), createdAt: now(), to: Array.from(new Set<PersonaId>(["site-manager", team.id])), from: s.persona, kind: "alert", readBy: [], text: `${personaName(s.persona)} cleared "${key}" for ${t.name} ${t.section}.` }, ...s.notifications],
         });
       },
 
@@ -177,6 +177,7 @@ export const useStore = create<State>()(
               id: uid("NT"),
               createdAt: now(),
               to: impact.notify.filter((p) => p !== s.persona),
+              from: s.persona,
               kind: "change",
               readBy: [],
               text: `${personaName(s.persona)} changed ${t.name} ${t.section} (${describePatch(before, patch)}).${impact.changedTaskIds.length ? ` Your tasks move: ${moved}.` : ""}${slipped.length ? ` ⚠ ${slipped.map((m) => `${m.milestone.name} slips ${m.slip} day(s)`).join("; ")}.` : ""}${reason ? ` Reason: ${reason}` : ""}`,

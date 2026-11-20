@@ -70,7 +70,7 @@ export function ReplanPanel() {
         <ol className="mt-2 space-y-2">
           {p.actions.map((a, i) => (
             <li key={i} className="flex gap-3 rounded-lg border border-stone-200 p-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white">{i + 1}</span>
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1e1f21] text-xs font-bold text-white">{i + 1}</span>
               <div className="text-sm">
                 <p className="font-medium text-stone-900">
                   {a.kind === "crash" ? "Add crew" : "Pull forward"}: {name(a.taskId)}{" "}

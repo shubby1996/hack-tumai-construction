@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         dueDay: fallback?.nextSteps[0]?.dueDay ?? (Number.isFinite(dueIn) && it.dueInDays !== null ? today + Math.max(0, Math.round(dueIn)) : undefined),
         source: "user",
       };
-      const line = String(it.line || fallback?.text || step.text);
+      const line = String(it.line || fallback?.text || step.text).replace(/^(\d+[.)]|[-•*–])\s+/, "").trim();
       return {
         text: line,
         type: TYPES.includes(it.type as EntryType) ? (it.type as EntryType) : "meeting",

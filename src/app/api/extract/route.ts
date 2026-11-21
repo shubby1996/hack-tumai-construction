@@ -3,7 +3,7 @@
 // Engine priority: open-source model (LLM_BASE_URL) → Claude (ANTHROPIC_API_KEY) → rule-based fallback.
 
 import { aiConfig, openChatJsonWithFallback, shortReason } from "@/lib/ai";
-import { extractWithRules, locationFromText, overrideFromText, suggestSteps, type DraftStep, type ExtractResult, type ExtractTask } from "@/lib/extract-rules";
+import { delayFromText, extractWithRules, locationFromText, overrideFromText, suggestSteps, type DraftStep, type ExtractResult, type ExtractTask } from "@/lib/extract-rules";
 import { CONTACTS } from "@/lib/seed";
 import type { EntryType, TeamId } from "@/lib/types";
 
@@ -14,6 +14,7 @@ Rules:
 - Use ONLY facts stated in the note or visible in the photo descriptions. Never invent times, amounts, parties or causes.
 - If a required fact is missing, leave the field empty and list its key in "missing".
 - Required: stoppage → taskId, cause, responsibleParty, estimatedDelayDays. defect → taskId, location, responsibleParty. delivery → material, quantity.
+- "stoppage" means work is stopped right now (crew or machine idle). An announced delay of later work ("kommt 2 Tage später", "3 days late") is "progress" with estimatedDelayDays, not a stoppage.
 - Pick taskId only from the given task list; if unsure, leave it empty.
 - "summary" is one short English sentence. Keep German terms in brackets if useful.
 - "followUpQuestion": ONE short question asking for the most important missing fact, in the language of the note. Empty if nothing is missing.
@@ -108,6 +109,8 @@ function sanitizeSteps(raw: unknown, today: number): DraftStep[] {
   if (!Array.isArray(raw)) return [];
   return (raw as RawStep[])
     .filter((st) => st && KINDS.includes(String(st.kind)) && st.text)
+    // "Inform the site manager" is pointless: he sees every log.
+    .filter((st) => !((st.kind === "notify" || st.kind === "contact") && st.who === "site-manager"))
     .slice(0, 5)
     .map((st) => ({
       kind: st.kind as DraftStep["kind"],
@@ -119,7 +122,10 @@ function sanitizeSteps(raw: unknown, today: number): DraftStep[] {
 }
 
 function sanitize(raw: Partial<ExtractResult> & { nextSteps?: unknown }, tasks: ExtractTask[], engine: ExtractResult["engine"], text = "", today = 0): ExtractResult {
-  const type = ENTRY_TYPES.includes(raw.type as EntryType) ? (raw.type as EntryType) : "note";
+  let type = ENTRY_TYPES.includes(raw.type as EntryType) ? (raw.type as EntryType) : "note";
+  // "kommt 2 Tage später" is a reported delay, not a crew standing idle right now. Models often call it a
+  // stoppage; keep it a delay so it becomes a plan-change proposal for the site manager.
+  if (type === "stoppage" && delayFromText(text) && extractWithRules(text, tasks, undefined, today).type !== "stoppage") type = "progress";
   const fields: ExtractResult["fields"] = {};
   for (const [k, v] of Object.entries(raw.fields ?? {})) {
     if (v === null || v === undefined || v === "") continue;
@@ -129,7 +135,10 @@ function sanitize(raw: Partial<ExtractResult> & { nextSteps?: unknown }, tasks: 
     } else fields[k] = String(v);
   }
   if (fields.taskId && !tasks.some((t) => t.id === fields.taskId)) delete fields.taskId;
-  const missing = (Array.isArray(raw.missing) ? raw.missing.map(String) : []).filter((m) => fields[m] === undefined);
+  if (!fields.estimatedDelayDays && delayFromText(text)) fields.estimatedDelayDays = delayFromText(text);
+  // Only stoppages need a start time and a cause owner; drop the model's follow-ups for anything else.
+  const stoppageOnly = ["startTime", "responsibleParty", "estimatedDelayDays", "cause"];
+  const missing = (Array.isArray(raw.missing) ? raw.missing.map(String) : []).filter((m) => fields[m] === undefined && (type === "stoppage" || !stoppageOnly.includes(m)));
   // A stated override ("in drei Monaten erneut ansprechen") always wins, whatever the model returned.
   const override = overrideFromText(text, today);
   let nextSteps = sanitizeSteps(raw.nextSteps, today);

@@ -44,7 +44,7 @@
     <div class="logo">S</div>
     <div>
       <h1>SiteFlow – Platform Explanation</h1>
-      <p>Tum.ai Construction Hack · Challenge B · last updated 21 Nov 2026 (site manager workflow) · <span id="ver">v0.5</span></p>
+      <p>Tum.ai Construction Hack · Challenge B · last updated 21 Nov 2026 (site manager workflow) · <span id="ver">v0.5.1</span></p>
     </div>
   </div>
 </header>
@@ -366,6 +366,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
     <p>Add a row whenever the platform or this document changes. Newest first.</p>
     <table>
       <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+      <tr><td>21 Nov 2026</td><td>v0.5.1</td><td>Fix with the live open model: an announced delay ("kommt 2 Tage später") is no longer classed as a stoppage, so it reaches the site manager as a plan-change proposal; no follow-up question for start time on non-stoppages; no "inform the site manager" steps; meeting-minute items without their numbering</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.5</td><td>From the team's site-manager interview: new log format (location, current state, next steps with who and when; the speaker's instruction wins); delays from logs become proposed plan changes the site manager accepts; "Today so far" summary on Home with AI summary (<code>/api/summary</code>); Logs view with filters replaces Diary; Messages to send (WhatsApp / SMS / email drafts for subs who don't use the app); Setup screen with schedule import (.xlsx / .csv) and contacts; meeting-minutes import (<code>/api/minutes</code>); daily report lists locations and agreed next steps</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.4</td><td>Work-management style UI: dark sidebar, project with List / Board (drag and drop) / Timeline views, task detail panel, Inbox with authors, completion checkboxes and avatars, greeting on Home, coral accent</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.3</td><td>Mobile-friendly: bottom tab bar on phones, larger touch targets, 16 px inputs (no iOS zoom), camera and gallery photo buttons, list view of the plan on phones, re-plan scrolls into view, "Open on phone" QR code, installable to the home screen. Live app switched to Groq (llama-3.1-8b-instant + qwen/qwen3.8-27b)</td></tr>

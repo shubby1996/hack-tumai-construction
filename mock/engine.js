@@ -1,4 +1,4 @@
-// SiteFlow mock – logic. Plain-JS port of src/lib/{dates,engine,extract-rules,minutes,templates,messages}.ts
+// Cats Track mock – logic. Plain-JS port of src/lib/{dates,engine,extract-rules,minutes,templates,messages}.ts
 // so the mock behaves like the real app in offline (rule-based) mode. You rarely need to touch this file.
 
 (function () {

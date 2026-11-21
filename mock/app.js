@@ -1,4 +1,4 @@
-// SiteFlow mock – state, actions and every screen.
+// Cats Track mock – state, actions and every screen.
 // "Speak on site → the app sorts it → the right person gets the job."
 // Three areas: Today · Record · Plan. Search for "VIEW:" to jump between screens.
 // Colours are design tokens (ink, muted, accent, ok, bad, warn, sel …) defined in index.html.
@@ -123,6 +123,7 @@
   }
 
   // ---- UI kit (same building blocks as src/components/ui.tsx)
+  const LOGO = (cls) => `<svg viewBox="0 0 512 512" class="${cls} shrink-0" aria-label="Cats Track"><rect width="512" height="512" rx="112" fill="#f06a6a"/><path d="M124 400V150l84 70h96l84-70v250a52 52 0 0 1-52 52H176a52 52 0 0 1-52-52z" fill="#fff"/><circle cx="206" cy="292" r="20" fill="#1e1f21"/><circle cx="306" cy="292" r="20" fill="#1e1f21"/><path d="M176 380h160" stroke="#f9c4c4" stroke-width="18" stroke-linecap="round"/><path d="M176 380h88" stroke="#f06a6a" stroke-width="18" stroke-linecap="round"/><circle cx="264" cy="380" r="20" fill="#f06a6a" stroke="#fff" stroke-width="8"/></svg>`;
   const ICONS = {
     mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
     clip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
@@ -824,7 +825,7 @@
     return `
     <div class="min-h-screen bg-canvas lg:pl-60">
       <aside class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-1 bg-[#2e2e30] px-3 py-4 text-white lg:flex">
-        <div class="mb-3 flex items-center gap-2 px-2"><span class="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-sm font-semibold">S</span><span class="font-semibold">SiteFlow</span></div>
+        <div class="mb-3 flex items-center gap-2 px-2">${LOGO("h-7 w-7")}<span class="font-semibold">Cats Track</span></div>
         <button onclick="A.record()" class="mb-3 flex h-10 items-center gap-2 rounded-full border border-white/25 px-3 text-sm hover:bg-white/10"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs">+</span>Create note</button>
         ${RailItem(Ic("home", "h-4 w-4"), "Today", view === "today", "A.go('today')", needs)}
         ${RailItem(Ic("plan", "h-4 w-4"), "Plan", view === "plan", "A.go('plan')")}
@@ -832,7 +833,8 @@
       </aside>
 
       <header class="sticky top-0 z-20 border-b border-line bg-white">
-        <div class="flex items-center gap-2 px-4 pb-2 pt-3 sm:px-6">
+        <div class="flex items-center gap-2.5 px-4 pb-2 pt-3 sm:px-6">
+          <span class="lg:hidden">${LOGO("h-8 w-8")}</span>
           <div class="min-w-0 flex-1">
             <h1 class="truncate text-[20px] font-semibold leading-tight text-ink">${title}</h1>
             ${view === "today" ? `<p class="text-xs text-muted">${dayLabel(S.today)} · ${esc(m.name.split(" ")[0])}</p>` : view === "plan" ? `<p class="truncate text-xs text-muted">${esc(S.project.name)}</p>` : ""}
@@ -876,7 +878,7 @@
     </button>`;
 
   function Profile() {
-    return Modal("👤 Acting as", `
+    return Modal("Acting as", `
       <ul class="space-y-2">${PERSONAS.map((p) => `
         <li><button onclick="A.persona('${p.id}')" class="flex min-h-14 w-full items-center gap-3 rounded-lg border px-3 text-left ${p.id === S.persona ? "border-accent bg-accent-tint" : "border-line"}">
           ${Avatar(p.id, p.name, 36)}<span class="min-w-0 flex-1"><span class="block font-bold">${esc(p.name)}</span><span class="block truncate text-xs text-muted">${esc(p.role.split(" (")[0])}</span></span>${p.id === S.persona ? "✓" : ""}

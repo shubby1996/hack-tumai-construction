@@ -1145,7 +1145,7 @@
 
   function ScopeBar() {
     if (!isSM()) return `<div class="mb-3 flex flex-wrap gap-1">${Badge(`👤 ${esc(TEAMS.find((t) => t.id === S.persona).name)}`, "accent")}${Badge("🔗 linked · read-only")}</div>`;
-    return `<div class="mb-3 inline-flex rounded-md bg-soft p-0.5 text-[13px]">${[["all", "All"], ["mine", "Mine"]].map(([k, l]) => `<button onclick="A.scope('${k}')" class="h-7 rounded px-3 ${U.scope === k ? "bg-white font-medium text-ink shadow-sm" : "text-muted"}">${l}</button>`).join("")}</div>`;
+    return `<div class="mb-3 flex w-full gap-1 rounded-lg bg-soft p-1 text-sm">${[["all", "All"], ["mine", "Mine"]].map(([k, l]) => `<button onclick="A.scope('${k}')" class="h-9 flex-1 rounded-md ${U.scope === k ? "bg-white font-semibold text-ink shadow-sm" : "text-muted"}">${l}</button>`).join("")}</div>`;
   }
 
   // ---- Task list (Plan › More)

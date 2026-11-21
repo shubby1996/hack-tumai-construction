@@ -804,7 +804,7 @@
   }
 
   // ================================================================== VIEW: shell (bottom bar Today · Record · Plan; slim left rail on desktop)
-  const PLAN_TABS = [["timeline", "📅", "Timeline"], ["board", "🗂", "Board"], ["site", "🗺", "Site"]];
+  const PLAN_TABS = [["timeline", "📅", "Timeline"], ["site", "🗺", "Site"]];
   const MORE_TABS = [["list", "📋", "Task list"], ["notes", "📒", "Site notes"], ["docs", "📄", "Documents"], ["history", "🕘", "History"], ["setup", "⚙", "Setup"]];
 
   const SAMPLE_EMAIL = "Von: Stahlhandel Müller\nBetreff: Lieferung Bewehrung Abschnitt C\n\nSehr geehrter Herr Bauer,\nleider können wir den Bewehrungsstahl für Abschnitt C (6,2 t) nicht wie geplant am Freitag liefern. Neuer Liefertermin ist Dienstag. Bitte bestätigen Sie uns kurz.\n\nMit freundlichen Grüßen\nStahlhandel Müller";

@@ -35,7 +35,7 @@
     view: "record", planTab: "timeline", moreOpen: false, profileOpen: false, openTask: null, toast: null,
     capture: { lang: "de-DE", text: "", attachments: [], draft: null, usedVoice: false, listening: false },
     demo: false, details: false, stepPick: null, attachMenu: null, contractPicker: null, preview: null, logModal: null,
-    open: {}, last: null, edit: null, collapsed: {}, editMsg: {}, libPerson: null,
+    open: {}, last: null, edit: null, collapsed: {}, editMsg: {}, libPerson: null, report: null,
     logs: { q: "", filter: "all" }, scope: "all", site: { section: null },
     minutes: { open: false, text: "", res: null, keep: [] },
     email: { open: false, text: "" },
@@ -44,8 +44,10 @@
 
   const render = () => {
     const scroll = window.scrollY;
+    const rv = document.querySelector("[data-report-view]")?.scrollTop;
     document.getElementById("app").innerHTML = Shell();
     window.scrollTo(0, scroll);
+    if (rv) { const el = document.querySelector("[data-report-view]"); if (el) el.scrollTop = rv; }
   };
   const commit = () => { save(); render(); };
   const toast = (m) => { U.toast = m; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { U.toast = null; render(); }, 2500); };
@@ -581,11 +583,27 @@
       if (!n || !isSM()) return;
       S.notices = S.notices.map((x) => (x.id === id ? { ...x, status: "approved", approvedAt: nowIso() } : x));
       if (n.mode !== "report") S.decisions = [{ id: uid("D"), createdAt: nowIso(), day: S.today, by: S.persona, kind: n.mode === "preventive" ? "preventive" : "reactive", text: `Approved: ${n.title} → ${n.addressee}` }, ...S.decisions];
-      save(); toast("Approved ✓ · PDF in Plan › More › Documents");
+      save(); toast(n.mode === "report" ? "Approved ✓ · kept in your site records" : "Approved ✓ · PDF in Plan › More › Documents");
     },
-    dailyReport() {
-      addNotice({ ...SF.draftTagesbericht({ day: S.today, tasks: S.tasks, sched: schedule(S.tasks), entries: S.entries, decisions: S.decisions, notices: S.notices }), day: S.today, by: S.persona });
-      save(); toast("Daily report drafted");
+    async dailyReport() {
+      const ready = U.ai.text && U.ai.text !== "Summarising…" ? U.ai : null;
+      const n = { ...SF.draftTagesbericht({ day: S.today, tasks: S.tasks, sched: schedule(S.tasks), entries: S.entries, decisions: S.decisions, notices: S.notices }), day: S.today, by: S.persona, data: buildReport(ready?.text, ready?.note) };
+      addNotice(n); save();
+      U.report = { id: n.id, writing: true }; render();
+      // the day in brief comes from the AI when it answers in time, otherwise from the built-in rules
+      const started = Date.now();
+      const ai = ready || !S.entries.some((e) => e.day === S.today) ? null : await Promise.race([api("/api/summary", { facts: summaryFacts() }), new Promise((r) => setTimeout(() => r(null), 4000))]);
+      if (ai?.summary) { S.notices = S.notices.map((x) => (x.id === n.id ? { ...x, data: { ...x.data, brief: ai.summary, briefBy: `AI · ${ai.model ?? "open model"}` } } : x)); save(); }
+      setTimeout(() => { if (U.report?.id === n.id) { U.report = { id: n.id, writing: false }; render(); } }, Math.max(0, 1100 - (Date.now() - started)));
+    },
+    openReport(id) { U.report = { id, writing: false }; render(); },
+    closeReport() { U.report = null; render(); },
+    printReport(id) {
+      const n = S.notices.find((x) => x.id === id);
+      const w = window.open("", "_blank");
+      if (!w) return toast("Allow pop-ups to save the PDF");
+      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(n.title)}</title><style>${REPORT_CSS}body{margin:0}@page{size:A4;margin:10mm}</style></head><body><article class="rp">${ReportDoc(n)}</article></body></html>`);
+      w.document.close(); w.focus(); setTimeout(() => w.print(), 400);
     },
     myReports() { U.libPerson = S.persona; U.libFilter = "all"; U.libItem = null; U.view = "plan"; U.planTab = "library"; U.moreOpen = false; render(); window.scrollTo({ top: 0 }); },
     libPerson(id) { U.libPerson = id; render(); },
@@ -899,6 +917,7 @@
       ${U.stepPick !== null && U.capture.draft ? StepPicker() : ""}
       ${U.preview ? Preview() : ""}
       ${U.email.open ? EmailPaste() : ""}
+      ${U.report ? ReportView() : ""}
       ${U.logModal ? Modal("📒 Site note", LogCard(S.entries.find((e) => e.id === U.logModal)), "A.closeLog()") : ""}
       ${U.toast ? `<div class="fixed bottom-28 left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white shadow-xl lg:bottom-6">${esc(U.toast)}</div>` : ""}
     </div>`;
@@ -965,12 +984,176 @@
         </div>
         <p class="mt-2 truncate text-[13px] text-muted">${preview}</p>
         ${U.ai.text ? `<div class="mt-3 whitespace-pre-line rounded-md bg-canvas p-3 text-[13px] text-ink">${esc(U.ai.text)}${U.ai.note ? `<p class="mt-1 text-[11px] text-violet-700">${esc(U.ai.note)}</p>` : ""}</div>` : ""}
-        <button onclick="${rep ? `A.libNotice('${rep.id}')` : "A.dailyReport()"}" class="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-accent text-sm font-semibold text-white hover:bg-accent-dark">${Ic(rep ? "file" : "book", "h-4 w-4")}${rep ? "Open daily report" : "Create daily report"}</button>
+        <button onclick="${rep ? `A.openReport('${rep.id}')` : "A.dailyReport()"}" class="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-accent text-sm font-semibold text-white hover:bg-accent-dark">${Ic(rep ? "file" : "book", "h-4 w-4")}${rep ? "Open daily report" : "Create daily report"}</button>
         <div class="mt-1 flex items-center justify-between">
           <button onclick="A.summarise()" class="inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-[13px] font-medium text-muted hover:bg-soft">${Ic("pen", "h-4 w-4")}Summarise my day</button>
           <button onclick="A.myReports()" class="inline-flex h-9 items-center gap-1 rounded-full px-2 text-[13px] font-medium text-accent-dark hover:bg-accent-tint">See all my reports (${myReportCount()})${Ic("chev", "h-4 w-4")}</button>
         </div>
       </section>`;
+  }
+
+  // ---- the daily report itself (Bautagesbericht): built from the day's notes, photos and plan, laid out like the PDF template
+  const WD_DE = { Mon: "Montag", Tue: "Dienstag", Wed: "Mittwoch", Thu: "Donnerstag", Fri: "Freitag", Sat: "Samstag", Sun: "Sonntag" };
+  const TYPE_DE = { stoppage: "Stillstand", delivery: "Lieferung", defect: "Mangel", incident: "Vorfall", meeting: "Besprechung", attendance: "Personal", progress: "Fortschritt", instruction: "Anordnung", note: "Notiz" };
+  const WEATHER = [["2 °C · bewölkt · Wind 10 km/h", "5 °C · trocken · Wind 10 km/h"], ["3 °C · Nieselregen · Wind 15 km/h", "6 °C · trocken · Wind 10 km/h"], ["1 °C · klar · windstill", "7 °C · sonnig · Wind 5 km/h"], ["4 °C · bewölkt · Wind 20 km/h", "6 °C · Regen · Wind 20 km/h"], ["0 °C · Frost · windstill", "4 °C · trocken · Wind 10 km/h"]];
+  const dayLong = (day) => `${WD_DE[dayShort(day).wd]}, ${SF.dayDE(day)}`;
+  const dueDE = (day) => (day === undefined ? "–" : day === S.today ? "heute" : day === S.today + 1 ? "morgen" : SF.dayDE(day).slice(0, 6));
+  function buildReport(brief, briefBy) {
+    const day = S.today, sched = schedule(S.tasks);
+    const todays = S.entries.filter((e) => e.day === day).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const problems = todays.filter(isProblem);
+    const active = S.tasks.filter((t) => t.status !== "done" && sched[t.id].es <= day && sched[t.id].ef >= day);
+    const delayed = S.tasks.filter((t) => t.delayDays > 0 && t.status !== "done");
+    const maxDelay = Math.max(0, ...delayed.map((t) => t.delayDays));
+    const ms = milestoneSlips(S.tasks, sched).filter((m) => m.finish >= day).sort((a, b) => a.milestone.targetDay - b.milestone.targetDay)[0];
+    const client = S.contacts.find((c) => c.id === "client");
+    const letters = S.notices.filter((n) => n.type !== "tagesbericht");
+    const taskOf = (e) => S.tasks.find((t) => t.id === e.fields?.taskId);
+    const where = (e) => e.location || (taskOf(e)?.section ? `Abschnitt ${taskOf(e).section}` : "Baustelle");
+    const openDecisions = [...S.proposals.filter((p) => p.status === "pending").map((p) => `Umplanung ${taskLabel(p.taskId)} (+${p.days} AT)`), ...letters.filter((n) => n.status === "draft").map((n) => `${n.title.split(" – ")[0]} an ${n.addressee}`)];
+    const autoBrief = [
+      todays.length ? `${todays.length} Notiz(en) heute, ${problems.length} Problem(e).` : "Keine Notizen heute; Arbeiten laut Plan.",
+      ...problems.slice(0, 3).map((e) => `${e.summary}${e.fields?.startTime ? ` (seit ${e.fields.startTime})` : ""}.`),
+      maxDelay ? `Verzug +${maxDelay} Arbeitstag(e).` : "",
+      ms ? `Meilenstein ${ms.milestone.name}: ${ms.slip ? `+${ms.slip} AT gefährdet` : "im Plan"}.` : "",
+      openDecisions.length ? `Entscheidung offen: ${openDecisions.join("; ")}.` : "",
+    ].filter(Boolean).join(" ");
+    return {
+      nr: String(40 + day).padStart(3, "0"), date: dayLong(day), weather: WEATHER[day % WEATHER.length],
+      project: S.project.name, projectNo: "LH-2", manager: PERSONAS[0].name, client: client ? `${client.name}, ${client.company}` : S.project.client,
+      kpi: { workers: active.reduce((n, t) => n + t.crew, 0), notes: todays.length, problems: problems.length, delay: maxDelay, milestone: ms ? { name: ms.milestone.name, slip: ms.slip, day: dayLabel(ms.finish) } : null },
+      brief: brief || autoBrief, briefBy: brief ? briefBy : "",
+      hindrances: problems.map((e) => {
+        const t = taskOf(e);
+        const who = e.nextSteps?.find((st) => st.who && st.who !== "site-manager")?.who;
+        const letter = letters.find((n) => n.refs?.includes(e.id));
+        return { cause: e.fields?.cause || e.summary, task: t ? `${t.name} · Abschnitt ${t.section}` : where(e), who: who ? contactName(who) : t ? teamName(t.team) : "–", since: e.fields?.startTime || clock(e.createdAt), delay: delayOf(e) || t?.delayDays || 0, notice: letter ? `${NOTICE_LABEL[letter.type] ?? letter.title}: ${letter.status === "approved" ? "freigegeben" : "Entwurf"}` : "–" };
+      }),
+      crews: active.map((t) => {
+        const s = sched[t.id], blocked = t.status === "blocked" || problems.some((e) => e.fields?.taskId === t.id && e.type === "stoppage");
+        return { company: TEAMS.find((x) => x.id === t.team)?.company ?? t.team, crew: t.crew, hours: t.crew * 8, work: `${t.name}${blocked ? " (behindert)" : ""}`, where: `Abschnitt ${t.section || "–"}`, state: blocked ? "behindert" : s.ef === day ? "Abschluss heute" : `${Math.round(((day - s.es) / Math.max(1, s.ef - s.es + 1)) * 100)} %`, hot: blocked };
+      }),
+      events: todays.map((e) => ({ time: clock(e.createdAt), text: e.summary, where: where(e), kind: TYPE_DE[e.type] ?? e.type, by: contactName(e.author), hot: isProblem(e) })),
+      deliveries: todays.filter((e) => e.type === "delivery").map((e) => ({ what: e.summary, where: where(e), by: contactName(e.author), photo: e.photos.length ? "Foto im Bericht" : "–" })),
+      decisions: S.decisions.filter((d) => d.day === day).map((d) => ({ time: clock(d.createdAt), who: personaName(d.by), text: d.text })),
+      steps: todays.flatMap((e) => (e.nextSteps ?? []).map((st) => ({ text: st.text, who: st.who ? contactName(st.who) : "–", due: dueDE(st.dueDay) }))),
+      letters: letters.map((n) => ({ title: n.title, to: n.addressee, status: n.status === "approved" ? "freigegeben" : "Entwurf" })),
+      photos: todays.flatMap((e) => (e.attachments ?? []).filter((a) => a.kind === "photo").map((a) => ({ url: a.url || sessionUrls[a.id] || "", caption: `${e.summary} ${where(e)}, ${clock(e.createdAt)}.` }))),
+    };
+  }
+
+  const REPORT_CSS = `
+.rp{font:13px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#1e1f21;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rp *{box-sizing:border-box}
+.rp-hd{background:#1e1f21;color:#fff;display:flex;gap:12px;align-items:center;padding:16px 18px}
+.rp-hd svg{width:44px;height:44px;flex:none}
+.rp-hd h2{font-size:21px;font-weight:700;margin:0;line-height:1.15}
+.rp-hd .sub{color:#b9bbc0;font-size:12px}
+.rp-hd .meta{margin-left:auto;text-align:right;font-size:11.5px;color:#d6d7da;line-height:1.5}
+.rp-hd .meta b{color:#fff;font-size:14px}
+.rp-bd{padding:14px 16px 22px}
+.rp-info{display:grid;grid-template-columns:repeat(2,1fr);gap:2px}
+.rp-info>div{background:#f4f4f5;padding:7px 10px}
+.rp-k{display:block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6d6e6f}
+.rp-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:8px}
+.rp-kpi>div{background:#f4f4f5;padding:8px 10px;min-width:0}
+.rp-kpi b{display:block;font-size:20px;line-height:1.2}
+.rp-kpi span{display:block;font-size:11px;color:#6d6e6f}
+.rp-kpi .warn{background:#fff3e6;border-left:3px solid #e8590c}.rp-kpi .warn b{color:#e8590c}
+.rp-kpi .ok b{color:#1e1f21}
+.rp-brief{margin-top:8px;background:#fef1f1;border-left:4px solid #f06a6a;padding:9px 12px;font-size:13.5px}
+.rp-brief em{display:block;margin-top:3px;font-size:10.5px;font-style:normal;color:#7c3aed}
+.rp-sec{margin-top:18px}
+.rp-sec h3{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:15px;font-weight:700;margin:0;padding-bottom:4px;border-bottom:2px solid #1e1f21}
+.rp-sec h3 small{font-size:10.5px;font-weight:400;color:#6d6e6f;white-space:nowrap}
+.rp-sec.hot h3{border-color:#e8590c}
+.rp-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rp table{width:100%;border-collapse:collapse;min-width:540px}
+.rp th{text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6d6e6f;padding:7px 6px 5px;border-bottom:1px solid #1e1f21}
+.rp td{padding:6px;border-bottom:1px solid #e8e8ea;vertical-align:top}
+.rp tr.hl td{background:#fff4dc}
+.rp-empty{color:#8a8b8e;font-style:italic;padding:7px 6px;border-bottom:1px solid #e8e8ea}
+.rp-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
+.rp-photos img,.rp-photos .ph{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;border:1px solid #e8e8ea;background:#f4f4f5}
+.rp-photos p{font-size:11px;margin:4px 0 0}
+.rp-sign{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:28px}
+.rp-sign>div{border-top:1px solid #8a8b8e;padding-top:5px;font-size:12px;color:#6d6e6f}
+.rp-sign b{display:block;font-size:10px;letter-spacing:.05em;color:#1e1f21}
+.rp-foot{margin-top:18px;border-top:1px solid #e8e8ea;padding-top:6px;font-size:10px;color:#8a8b8e}
+@media (max-width:639px){
+.rp-kpi>div:last-child{grid-column:span 2}
+.rp table{min-width:0}.rp thead{display:none}
+.rp tr{display:block;padding:7px 6px;border-bottom:1px solid #e8e8ea}
+.rp tr.hl{background:#fff4dc}
+.rp td{display:inline;padding:0;border:0;background:none!important}
+.rp td:first-child{display:block;font-weight:600;margin-bottom:2px}
+.rp td:not(:first-child)::before{content:attr(data-l) " ";font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#8a8b8e}
+.rp td:not(:first-child):not(:last-child)::after{content:"  ·  ";white-space:pre;color:#b9bbc0}}
+@media (min-width:640px){.rp-info{grid-template-columns:repeat(4,1fr)}.rp-kpi{grid-template-columns:repeat(5,1fr)}.rp-photos{grid-template-columns:repeat(3,1fr)}.rp-hd{padding:20px 28px}.rp-bd{padding:18px 28px 26px}}
+@media print{.rp table{min-width:0}.rp-tw{overflow:visible}.rp-sec{break-inside:avoid}}`;
+  if (!document.getElementById("rp-css")) document.head.insertAdjacentHTML("beforeend", `<style id="rp-css">${REPORT_CSS}</style>`);
+
+  function ReportDoc(n) {
+    const d = n.data;
+    if (!d) return `<div class="rp-bd"><pre style="white-space:pre-wrap;font:12.5px/1.5 ui-monospace,monospace;margin:0">${esc(n.body)}</pre></div>`;
+    const sec = (no, de, en, head, rows, empty, hot) => `
+      <section class="rp-sec${hot ? " hot" : ""}"><h3><span>${no}. ${de}</span><small>${en}</small></h3>
+        ${rows.length ? `<div class="rp-tw"><table><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr${r.hl ? ' class="hl"' : ""}>${r.cells.map((c, i) => `<td data-l="${head[i]}">${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="rp-empty">${empty}</p>`}
+      </section>`;
+    const tr = (cells, hl) => ({ cells, hl });
+    const k = d.kpi, m = k.milestone;
+    return `
+      <header class="rp-hd">${LOGO("")}<div><h2>Bautagesbericht</h2><div class="sub">Daily site report · Cats Track</div></div>
+        <div class="meta"><b>Nr. ${d.nr}</b><br>${esc(d.date)}<br>Status: ${n.status === "approved" ? "Freigegeben" : "Entwurf"}</div></header>
+      <div class="rp-bd">
+        <div class="rp-info">
+          <div><span class="rp-k">Projekt</span>${esc(d.project)}</div><div><span class="rp-k">Projekt-Nr.</span>${esc(d.projectNo)}</div>
+          <div><span class="rp-k">Bauleitung</span>${esc(d.manager)}</div><div><span class="rp-k">Auftraggeber</span>${esc(d.client)}</div>
+          <div><span class="rp-k">Wetter vormittags</span>${esc(d.weather[0])}</div><div><span class="rp-k">Wetter nachmittags</span>${esc(d.weather[1])}</div>
+          <div><span class="rp-k">Arbeitszeit</span>07:00 – 16:30</div><div><span class="rp-k">Behinderung durch Wetter</span>nein</div>
+        </div>
+        <div class="rp-kpi">
+          <div><b>${k.workers}</b><span>Arbeitskräfte</span></div><div><b>${k.notes}</b><span>Notizen heute</span></div><div><b>${k.problems}</b><span>Probleme</span></div>
+          <div class="${k.delay ? "warn" : "ok"}"><b>${k.delay ? `+${k.delay} AT` : "0 AT"}</b><span>Verzug</span></div>
+          <div class="${m?.slip ? "warn" : "ok"}"><b>${m ? (m.slip ? `+${m.slip} AT` : "im Plan") : "–"}</b><span>${m ? `${esc(m.name)}, ${esc(m.day)}` : "Meilenstein"}</span></div>
+        </div>
+        <div class="rp-brief"><span class="rp-k">Tageszusammenfassung · Day in brief</span>${esc(d.brief)}${d.briefBy ? `<em>${esc(d.briefBy)}</em>` : ""}</div>
+        ${sec(1, "Behinderungen und Verzug", "Delays and hindrances", ["Ursache", "Betroffen (Vorgang · Ort)", "Verantwortlich", "Seit", "Verzug", "Anzeige"], d.hindrances.map((h) => tr([h.cause, h.task, h.who, h.since, h.delay ? `+${h.delay} AT` : "–", h.notice], true)), "Keine Behinderungen gemeldet.", true)}
+        ${sec(2, "Personal und Leistungen", "Workforce and work done", ["Firma / Gewerk", "AK", "Std", "Tätigkeit", "Ort", "Stand"], d.crews.map((c) => tr([c.company, c.crew, c.hours, c.work, c.where, c.state], c.hot)), "Keine Arbeiten laut Plan.")}
+        ${sec(3, "Ereignisse (Bautagebuch)", "Site notes of the day", ["Zeit", "Ereignis", "Ort", "Art", "Von"], d.events.map((e) => tr([e.time, e.text, e.where, e.kind, e.by], e.hot)), "Keine Notizen heute.")}
+        ${sec(4, "Lieferungen und Geräte", "Deliveries and equipment", ["Material / Gerät", "Ort", "Gemeldet von", "Prüfung"], d.deliveries.map((x) => tr([x.what, x.where, x.by, x.photo])), "Keine Lieferungen erfasst.")}
+        ${sec(5, "Anordnungen und Entscheidungen", "Instructions and decisions", ["Zeit", "Wer", "Was"], d.decisions.map((x) => tr([x.time, x.who, x.text])), "Keine Entscheidungen heute.")}
+        ${sec(6, "Nächste Schritte", "Agreed next steps", ["Was", "Wer", "Bis"], d.steps.map((x) => tr([`☐ ${x.text}`, x.who, x.due])), "Keine offenen Schritte.")}
+        ${sec(7, "Schriftverkehr", "Letters and notices (VOB/B)", ["Dokument", "An", "Status"], d.letters.map((x) => tr([x.title, x.to, x.status])), "Kein Schriftverkehr heute.")}
+        <section class="rp-sec"><h3><span>8. Fotos</span><small>Photos with AI captions</small></h3>
+          ${d.photos.length ? `<div class="rp-photos">${d.photos.map((p) => `<figure style="margin:0">${p.url ? `<img src="${p.url}" alt="">` : `<div class="ph"></div>`}<p>${esc(p.caption)}</p></figure>`).join("")}</div>` : `<p class="rp-empty">Keine Fotos heute.</p>`}
+        </section>
+        <div class="rp-sign"><div><b>AUFGESTELLT · BAULEITUNG</b>${esc(d.manager)}</div><div><b>ZUR KENNTNIS · AUFTRAGGEBER</b>[Name, Datum] (optional)</div></div>
+        <p class="rp-foot">Entwurf von Cats Track aus Sprachnotizen, Fotos und Plan. Vor Freigabe prüfen. Keine Rechtsberatung.</p>
+      </div>`;
+  }
+
+  function ReportView() {
+    const n = S.notices.find((x) => x.id === U.report?.id);
+    if (!n) return "";
+    const d = n.data;
+    return `
+      <div class="fixed inset-0 z-50 overflow-y-auto bg-[#3c3e42]" data-report-view>
+        <div class="sticky top-0 z-10 flex items-center gap-2 bg-[#1e1f21]/95 px-2 py-2 text-white backdrop-blur sm:px-4">
+          <button onclick="A.closeReport()" aria-label="Close report" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg hover:bg-white/10">✕</button>
+          <div class="min-w-0 flex-1"><p class="truncate text-sm font-semibold">${esc(n.title)}</p><p class="truncate text-[11px] text-white/60">${n.status === "approved" ? "Approved · kept in your site records" : "Draft · check it, then approve"}</p></div>
+          ${U.report.writing ? "" : `<button onclick="A.printReport('${n.id}')" class="h-9 shrink-0 rounded-full border border-white/25 px-3 text-[13px] font-medium hover:bg-white/10">PDF</button>
+          ${n.status === "draft" && isSM() ? `<button onclick="A.approveNotice('${n.id}')" class="h-9 shrink-0 rounded-full bg-accent px-3 text-[13px] font-semibold hover:bg-accent-dark">Approve</button>` : ""}`}
+        </div>
+        <div class="mx-auto max-w-[860px] px-2 pb-10 pt-3 sm:px-4 sm:pt-6">
+          ${U.report.writing ? `
+            <div class="flex flex-col items-center gap-3 rounded-md bg-white px-6 py-16 text-center shadow-xl">
+              <span class="flex h-12 w-12 animate-pulse items-center justify-center rounded-full bg-accent-soft text-accent-dark">${Ic("book", "h-6 w-6")}</span>
+              <p class="text-base font-semibold text-ink">Writing your daily report…</p>
+              <p class="text-[13px] text-muted">From ${d?.kpi.notes ?? 0} note${d?.kpi.notes === 1 ? "" : "s"}, ${d?.photos.length ?? 0} photo${d?.photos.length === 1 ? "" : "s"} and the plan</p>
+            </div>` : `<article class="rp overflow-hidden rounded-md shadow-xl">${ReportDoc(n)}</article>`}
+        </div>
+      </div>`;
   }
 
   function RecordHero() {
@@ -1456,7 +1639,7 @@
     const f = U.libFilter ?? "all";
     const items = [
       ...S.entries.map((e) => ({ id: e.id, by: e.author, kind: e.source === "minutes" ? "minutes" : "note", title: e.summary, day: dayLabel(e.day ?? S.today), status: isProblem(e) ? "problem" : "note", call: `A.openLog('${e.id}')` })),
-      ...S.notices.map((n) => ({ id: n.id, by: n.by ?? "site-manager", kind: n.type === "tagesbericht" ? "report" : "letter", title: n.title, day: dayLabel(S.today), status: n.status, call: `A.libNotice('${n.id}')` })),
+      ...S.notices.map((n) => ({ id: n.id, by: n.by ?? "site-manager", kind: n.type === "tagesbericht" ? "report" : "letter", title: n.title, day: dayLabel(S.today), status: n.status, call: n.type === "tagesbericht" ? `A.openReport('${n.id}')` : `A.libNotice('${n.id}')` })),
       ...ARCHIVE.map((a) => ({ ...a, call: `A.libOpen('${a.id}')` })),
     ].filter((it) => f === "all" || (f === "notes" ? ["note", "minutes"].includes(it.kind) : f === "letters" ? it.kind === "letter" : it.kind === "report"));
     const ICON = { note: "mic", minutes: "minutes", letter: "file", report: "book" };

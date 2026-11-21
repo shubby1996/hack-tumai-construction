@@ -1125,8 +1125,8 @@
   // ================================================================== VIEW: Plan (Timeline · Board · Site · More)
   function PlanTabs() {
     const more = MORE_TABS.find(([id]) => id === U.planTab);
-    const tab = (on, label, call) => `<button onclick="${call}" class="relative shrink-0 px-1 pb-2.5 pt-1 text-sm ${on ? "font-medium text-ink" : "text-muted"}">${label}${on ? '<span class="absolute inset-x-0 bottom-0 h-0.5 rounded bg-ink"></span>' : ""}</button>`;
-    return `<div class="flex gap-5 overflow-x-auto px-4 sm:px-6">
+    const tab = (on, label, call) => `<button onclick="${call}" class="relative flex-1 pb-3 pt-1.5 text-center text-sm ${on ? "font-semibold text-ink" : "text-muted"}">${label}${on ? '<span class="absolute inset-x-3 bottom-0 h-0.5 rounded bg-accent"></span>' : ""}</button>`;
+    return `<div class="flex px-2 sm:px-4">
       ${PLAN_TABS.map(([id, , label]) => tab(U.planTab === id, label, `A.planTab('${id}')`)).join("")}
       ${tab(!!more, more ? more[2] : "More", "A.more(true)")}
     </div>`;

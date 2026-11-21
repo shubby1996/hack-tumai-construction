@@ -84,8 +84,8 @@ export default function Home() {
   const sidebar = (
     <nav className="flex h-full flex-col bg-[#1e1f21] text-[#f5f4f3]">
       <div className="flex items-center gap-2 px-4 py-4">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#ef6b62] text-sm font-black text-white">S</span>
-        <span className="text-base font-semibold">SiteFlow</span>
+        <img src="/icon.svg" alt="" className="h-7 w-7 rounded-lg" />
+        <span className="text-base font-semibold">Cats Track</span>
         <button className="ml-auto rounded p-1 text-[#a2a0a2] hover:bg-white/10 lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
           ✕
         </button>

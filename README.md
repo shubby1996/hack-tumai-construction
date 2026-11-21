@@ -1,4 +1,4 @@
-# SiteFlow – AI site assistant (Tum.ai Construction Hack, Challenge B)
+# Cats Track – AI site assistant (Tum.ai Construction Hack, Challenge B)
 
 One shared two-week plan for the whole site. Every subcontractor updates their own tasks by voice from the site.
 The assistant **flags blockers before they bite** (preventive), **proposes a re-plan when something breaks** (reactive),
@@ -54,7 +54,7 @@ npm run check:engine # prints the plan engine's results for the demo scenario
 
 ## AI models: open source by default
 
-SiteFlow talks to any **OpenAI-compatible** chat endpoint, so small open models work without code changes.
+Cats Track talks to any **OpenAI-compatible** chat endpoint, so small open models work without code changes.
 Engine priority: open model (`LLM_BASE_URL`) → Claude (`ANTHROPIC_API_KEY`) → built-in rules.
 
 | Job | Default open model | Size | Notes |

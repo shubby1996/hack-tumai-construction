@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SiteFlow – Platform Explanation</title>
+<title>Cats Track – Platform Explanation</title>
 <style>
   :root { --ink:#1c1917; --quiet:#57534e; --line:#e7e5e4; --bg:#fafaf9; --accent:#f59e0b; --accent-soft:#fef3c7; --blue:#2563eb; }
   * { box-sizing: border-box; }
@@ -43,14 +43,14 @@
   <div class="wrap">
     <div class="logo">S</div>
     <div>
-      <h1>SiteFlow – Platform Explanation</h1>
+      <h1>Cats Track – Platform Explanation</h1>
       <p>Tum.ai Construction Hack · Challenge B · last updated 21 Nov 2026 (site manager workflow) · <span id="ver">v0.5.1</span></p>
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <p class="lead">SiteFlow is a shared two-week site plan with an AI assistant on top. Every subcontractor updates its own tasks by voice from site. The assistant flags blockers before they bite (preventive), proposes a re-plan when something breaks (reactive), and drafts every notice and report under VOB/B. The site manager approves re-plans and outgoing documents.</p>
+  <p class="lead">Cats Track is a shared two-week site plan with an AI assistant on top. Every subcontractor updates its own tasks by voice from site. The assistant flags blockers before they bite (preventive), proposes a re-plan when something breaks (reactive), and drafts every notice and report under VOB/B. The site manager approves re-plans and outgoing documents.</p>
 
   <nav class="toc">
     <strong>Contents</strong>
@@ -81,7 +81,7 @@
       <tr><td>Status</td><td>Hackathon MVP with synthetic data; one browser holds the state, personas are switched in the header</td></tr>
       <tr><td>Contract basis</td><td>VOB/B (German standard construction contract terms)</td></tr>
     </table>
-    <p class="note">SiteFlow is a drafting aid, not legal advice. Every outgoing letter is reviewed and released by the site manager.</p>
+    <p class="note">Cats Track is a drafting aid, not legal advice. Every outgoing letter is reviewed and released by the site manager.</p>
   </section>
 
   <section id="problem">
@@ -94,7 +94,7 @@
       <li><strong>Delays are found too late.</strong> "Suddenly we are two months behind."</li>
       <li><strong>Stoppages waste crews.</strong> When work stops, the crew should do something useful instead.</li>
     </ul>
-    <p>SiteFlow answers this with one shared plan and two kinds of support. Preventive support clears blockers before work starts. Reactive support re-plans the moment something breaks. Both produce the documentation automatically.</p>
+    <p>Cats Track answers this with one shared plan and two kinds of support. Preventive support clears blockers before work starts. Reactive support re-plans the moment something breaks. Both produce the documentation automatically.</p>
   </section>
 
   <section id="how">
@@ -133,7 +133,7 @@
           <text x="380" y="349" font-weight="600">Site manager approves; PDF or Word export; affected teams are notified</text>
         </g>
       </svg>
-      <figcaption>How SiteFlow works: capture, shared plan with two loops, outputs, approval.</figcaption>
+      <figcaption>How Cats Track works: capture, shared plan with two loops, outputs, approval.</figcaption>
     </figure>
     <p>The two-week plan itself (tasks, crews, dependencies, readiness checklists) is loaded once and then changed by foremen, stoppages and approved re-plans.</p>
   </section>
@@ -149,7 +149,7 @@
       <tr><td>Foreman, Rebar (Mehmet Kaya)</td><td>Bewehrung Kraus GmbH</td><td>Same as above, for rebar tasks</td><td>Same as above</td></tr>
       <tr><td>Foreman, Concrete (Piotr Nowak)</td><td>Betonbau Schmid GmbH</td><td>Same as above, for concrete tasks</td><td>Same as above</td></tr>
     </table>
-    <p><strong>Change-control rule.</strong> A foreman may change any of their own tasks, whatever depends on it. The change applies at once. SiteFlow computes its impact and notifies the affected foremen and the site manager, including any milestone that now slips.</p>
+    <p><strong>Change-control rule.</strong> A foreman may change any of their own tasks, whatever depends on it. The change applies at once. Cats Track computes its impact and notifies the affected foremen and the site manager, including any milestone that now slips.</p>
     <p>All company and person names are fictional.</p>
   </section>
 
@@ -188,7 +188,7 @@
     </ul>
     <h3>Messages to send</h3>
     <ul>
-      <li>Subcontractors, the client and suppliers don't use the app. When a log, an accepted plan change or an approved re-plan affects them, SiteFlow prepares a personal German message: <strong>action needed</strong> for whoever has to do something, <strong>FYI</strong> for teams whose dates only shift. The site manager checks or edits the text and sends it with <strong>WhatsApp</strong>, <strong>SMS</strong> or <strong>Email</strong> (opens the app on his phone with the text filled in) or <strong>Copy</strong>; the message is then marked as sent.</li>
+      <li>Subcontractors, the client and suppliers don't use the app. When a log, an accepted plan change or an approved re-plan affects them, Cats Track prepares a personal German message: <strong>action needed</strong> for whoever has to do something, <strong>FYI</strong> for teams whose dates only shift. The site manager checks or edits the text and sends it with <strong>WhatsApp</strong>, <strong>SMS</strong> or <strong>Email</strong> (opens the app on his phone with the text filled in) or <strong>Copy</strong>; the message is then marked as sent.</li>
       <li>People who use the app (claims manager, planning) get a to-do instead. Foreman profiles stay in the demo to show a possible future subcontractor view.</li>
     </ul>
     <h3>Inbox</h3>
@@ -221,7 +221,7 @@
 
   <section id="ai">
     <h2>7. AI and extraction</h2>
-    <p>SiteFlow uses <strong>small open-source models by default</strong>. It talks to any OpenAI-compatible chat endpoint (Ollama, Groq, Hugging Face, vLLM, LM Studio, OpenRouter), so models can be swapped through environment variables without code changes. Code: <code>src/lib/ai.ts</code>.</p>
+    <p>Cats Track uses <strong>small open-source models by default</strong>. It talks to any OpenAI-compatible chat endpoint (Ollama, Groq, Hugging Face, vLLM, LM Studio, OpenRouter), so models can be swapped through environment variables without code changes. Code: <code>src/lib/ai.ts</code>.</p>
     <p><strong>Engine priority:</strong> open model (<code>LLM_BASE_URL</code> set) → Claude (<code>ANTHROPIC_API_KEY</code> set) → built-in rule-based extractor. If a model call fails, the app falls back to the rules automatically. The header shows which engine and models are active.</p>
     <h3>7.1 Models</h3>
     <table>
@@ -262,7 +262,7 @@
 
   <section id="architecture">
     <h2>9. Architecture, tech stack and data model</h2>
-    <p>SiteFlow is a single Next.js app on Vercel. All logic except the AI calls runs in the browser, and state is kept in the browser's local storage, so there is no database to run for the MVP.</p>
+    <p>Cats Track is a single Next.js app on Vercel. All logic except the AI calls runs in the browser, and state is kept in the browser's local storage, so there is no database to run for the MVP.</p>
     <table>
       <tr><th>Layer</th><th>Technology</th><th>Where in the code</th></tr>
       <tr><td>Web app and hosting</td><td>Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, hosted on Vercel</td><td><code>src/app/page.tsx</code>, <code>src/components/*</code></td></tr>
@@ -346,7 +346,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
       <li>Voice input depends on the browser's speech recognition and does not work in Firefox.</li>
       <li>Small open models (2–4B) make more extraction mistakes than large ones; the review step and the rule-based fallback cover this. The open-model path was tested against a stand-in server, not yet against a real Qwen3-VL instance.</li>
       <li>Schedule import reads .xlsx/.csv exports only (no native .mpp files), and readiness items start as cleared. Site documents are listed, not parsed.</li>
-      <li>Messages open WhatsApp / SMS / email on the device; SiteFlow does not send them itself and cannot see replies.</li>
+      <li>Messages open WhatsApp / SMS / email on the device; Cats Track does not send them itself and cannot see replies.</li>
       <li>Offline capture, noisy sites and location from GPS are not handled yet.</li>
       <li>The re-plan heuristic does not model crew capacity limits per team, so a pulled-forward task can overlap another task of the same team.</li>
       <li>Legal references in the templates have not been reviewed by a construction lawyer.</li>
@@ -366,6 +366,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
     <p>Add a row whenever the platform or this document changes. Newest first.</p>
     <table>
       <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+      <tr><td>21 Nov 2026</td><td>v0.7.1</td><td>Renamed to Cats Track with a new logo (<code>/icon.svg</code>, lockup <code>/logo.svg</code>); mock: Library of all reports grouped by author, cleaner Site view, Board tab removed</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.7 (mock)</td><td>UX redesign as a clickable mock at <code>/mock/</code> (not yet in the Next.js app): three areas Today · Record · Plan, one "Needs you" list, record-first Today, confirmation card instead of a form, attach menu (PDF, photo, contract, meeting minutes, paste email), compact Asana-style mobile UI, mobile timeline with full task names</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.5.1</td><td>Fix with the live open model: an announced delay ("kommt 2 Tage später") is no longer classed as a stoppage, so it reaches the site manager as a plan-change proposal; no follow-up question for start time on non-stoppages; no "inform the site manager" steps; meeting-minute items without their numbering</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.5</td><td>From the team's site-manager interview: new log format (location, current state, next steps with who and when; the speaker's instruction wins); delays from logs become proposed plan changes the site manager accepts; "Today so far" summary on Home with AI summary (<code>/api/summary</code>); Logs view with filters replaces Diary; Messages to send (WhatsApp / SMS / email drafts for subs who don't use the app); Setup screen with schedule import (.xlsx / .csv) and contacts; meeting-minutes import (<code>/api/minutes</code>); daily report lists locations and agreed next steps</td></tr>
@@ -377,6 +378,6 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
   </section>
 </main>
 
-<footer>SiteFlow prototype · synthetic data · drafts are a drafting aid, not legal advice. Source: <code>public/platform.html</code> in the repo, served at <code>/platform.html</code>.</footer>
+<footer>Cats Track prototype · synthetic data · drafts are a drafting aid, not legal advice. Source: <code>public/platform.html</code> in the repo, served at <code>/platform.html</code>.</footer>
 </body>
 </html>

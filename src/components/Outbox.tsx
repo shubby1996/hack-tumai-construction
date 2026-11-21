@@ -16,7 +16,7 @@ export function Outbox({ toast }: { toast: (m: string) => void }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-[#e8e6e3] bg-white p-3 text-sm text-[#4b4c4e]">
-        Subcontractors, the client and suppliers don’t use this app. SiteFlow prepares a personal message for each of them – <b>action</b> for whoever has to do
+        Subcontractors, the client and suppliers don’t use this app. Cats Track prepares a personal message for each of them – <b>action</b> for whoever has to do
         something, <b>FYI</b> for whoever is only affected. Check the text, then send it via WhatsApp, SMS or email from your phone.
       </div>
       <div className="flex gap-2">

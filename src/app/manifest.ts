@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SiteFlow – AI site assistant",
-    short_name: "SiteFlow",
+    name: "Cats Track – AI site assistant",
+    short_name: "Cats Track",
     description: "Shared two-week site plan with preventive and reactive AI support and VOB/B drafts.",
     start_url: "/",
     display: "standalone",

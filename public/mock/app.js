@@ -613,6 +613,7 @@
       save(); toast(`${es.length} site note(s) saved`);
     },
 
+    siteSet(k) { U.site.section = k; render(); },
     siteSection(s) { U.site.section = U.site.section === s ? null : s; render(); },
 
     // setup
@@ -1325,10 +1326,7 @@
       const tasks = sortTasks(st.ts, sched);
       const notes = entries.filter((e) => (sectionOfEntry(e) || "Site") === sel);
       detail = `
-        <div class="mb-2 flex items-center gap-2">
-          <button onclick="A.siteSection('${sel}')" class="flex h-8 items-center gap-1 rounded-full border border-line bg-white pl-2 pr-3 text-[13px] text-muted"><span class="rotate-180">${Ic("chev", "h-4 w-4")}</span>All sections</button>
-          <h2 class="text-[15px] font-semibold text-ink">${sel === "Site" ? "Access & site" : `Section ${sel}`}</h2>
-        </div>
+        <div class="mb-2 px-0.5"><h2 class="text-[15px] font-semibold text-ink">${sel === "Site" ? "Access & site" : `Section ${sel}`}</h2><p class="text-xs text-muted">${metaOf(st)}</p></div>
         ${levels.length ? `<div class="mb-3 flex gap-1.5 overflow-x-auto">${levels.map((l) => { const n = st.ts.filter((t) => levelOf(t.name) === l && t.status !== "done").length; return `<span class="flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-line bg-white px-2.5 text-xs text-ink">${esc(l)} <span class="text-faint">${n}</span></span>`; }).join("")}</div>` : ""}
         <ul class="divide-y divide-soft rounded-lg border border-line bg-white px-3">${tasks.map((t) => TaskRow(t, sched, link[t.id])).join("") || `<li class="py-4 text-center text-sm text-muted">No tasks here</li>`}</ul>
         ${SectionTitle(`Site notes <span class="font-normal text-faint">${notes.length}</span>`)}
@@ -1345,7 +1343,12 @@
         </div>
       </section>
       <div class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted">${dot(C.problem, "Problem or overdue")}${dot(C.delay, "Delay")}${dot(C.blocked, "Blocked")}</div>
-      <div class="mt-4">${sel ? detail : `${SectionTitle("Sections")}${list}`}</div>`;
+      <div class="mt-4 flex gap-1 rounded-lg bg-soft p-1">${[null, ...keys].map((k) => {
+        const on = sel === k, lk = k ? look(stats(k)) : null;
+        return `<button onclick="A.siteSet(${k ? `'${k}'` : "null"})" class="relative flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md text-sm ${on ? "bg-white font-semibold text-ink shadow-sm" : "text-muted"}">
+          ${k === null ? "All" : k === "Site" ? "Access" : k}${lk?.dot ? `<span class="h-1.5 w-1.5 rounded-full" style="background:${lk.dot}"></span>` : ""}</button>`;
+      }).join("")}</div>
+      <div class="mt-3">${sel ? detail : list}</div>`;
   }
 
   // ---- Library (Plan › More): every report, grouped by the person who added it

@@ -132,30 +132,30 @@
   const DelayChip = (n) => Badge(`Delay +${n} d`, "amber");
   const VARIANTS = {
     primary: "bg-accent text-white hover:bg-accent-dark disabled:bg-accent-soft disabled:text-accent",
-    secondary: "border-2 border-line bg-white text-ink hover:bg-canvas disabled:text-faint",
+    secondary: "border border-line bg-white text-ink hover:bg-canvas disabled:text-faint",
     ghost: "text-muted hover:bg-soft",
     success: "bg-ok text-white hover:brightness-110 disabled:opacity-40",
   };
   const Btn = (label, onclick, variant = "secondary", extra = "", cls = "") =>
     `<button onclick="${onclick}" ${extra} class="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed ${VARIANTS[variant]} ${cls}">${label}</button>`;
   const Card = (title, body, right = "", cls = "") => `
-    <section class="rounded-2xl border border-line bg-white ${cls}">
+    <section class="rounded-lg border border-line bg-white ${cls}">
       ${title || right ? `<header class="flex flex-wrap items-center justify-between gap-2 px-4 pt-4"><h2 class="text-base font-bold text-ink">${title}</h2>${right}</header>` : ""}
       <div class="p-4">${body}</div>
     </section>`;
   const Field = (label, inner) => `<label class="block text-xs font-semibold text-muted">${label}<div class="mt-1 text-sm text-ink">${inner}</div></label>`;
-  const inputCls = "w-full min-h-11 rounded-xl border-2 border-line bg-white px-3 py-2 text-base text-ink focus:border-sel focus:outline-none";
+  const inputCls = "w-full min-h-11 rounded-xl border border-line bg-white px-3 py-2 text-base text-ink focus:border-sel focus:outline-none";
   const chipBtn = (label, onclick, active, extra = "") =>
-    `<button onclick="${onclick}" ${extra} class="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold ${active ? "bg-ink text-white" : "border-2 border-line bg-white text-ink"}">${label}</button>`;
-  const SectionTitle = (text, right = "") => `<div class="mb-2 mt-5 flex items-center justify-between"><h2 class="text-sm font-black uppercase tracking-wide text-muted">${text}</h2>${right}</div>`;
-  const AVATAR_COLORS = { "site-manager": "#c2410c", earthworks: "#b45309", formwork: "#2563eb", rebar: "#7c3aed", concrete: "#0f766e", client: "#52525b", supplier: "#52525b" };
+    `<button onclick="${onclick}" ${extra} class="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold ${active ? "bg-ink text-white" : "border border-line bg-white text-ink"}">${label}</button>`;
+  const SectionTitle = (text, right = "") => `<div class="mb-2 mt-5 flex items-center justify-between"><h2 class="text-base font-semibold text-ink">${text}</h2>${right}</div>`;
+  const AVATAR_COLORS = { "site-manager": "#f06a6a", earthworks: "#b45309", formwork: "#2563eb", rebar: "#7c3aed", concrete: "#0f766e", client: "#52525b", supplier: "#52525b" };
   const Avatar = (id, name, size = 24) => {
     const initials = String(name).split(" ").filter((w) => w !== "Dr.").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
     return `<span title="${esc(name)}" class="inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white" style="width:${size}px;height:${size}px;font-size:${size * 0.42}px;background:${AVATAR_COLORS[id] ?? "#71717a"}">${esc(initials)}</span>`;
   };
   const CheckCircle = (done, onclick, disabled) => `
     <button type="button" onclick="event.stopPropagation();${onclick}" ${disabled ? "disabled" : ""} title="${done ? "Mark incomplete" : "Mark complete"}" class="-m-2.5 flex h-11 w-11 shrink-0 items-center justify-center disabled:cursor-default disabled:opacity-40">
-      <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 ${done ? "border-ok bg-ok text-white" : "border-faint text-transparent hover:border-ok hover:text-ok"}">
+      <span class="flex h-6 w-6 items-center justify-center rounded-full border ${done ? "border-ok bg-ok text-white" : "border-faint text-transparent hover:border-ok hover:text-ok"}">
         <svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 8.5l3 3 7-7"/></svg>
       </span>
     </button>`;
@@ -174,7 +174,7 @@
   const MissingChip = (t) => (missingCount(t) ? Badge(`⚠ ${missingCount(t)} missing`, "outline") : "");
   const Modal = (title, body, onclose) => `
     <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onclick="if(event.target===this)${onclose}">
-      <div class="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 pb-safe sm:max-w-lg sm:rounded-3xl">
+      <div class="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 pb-safe sm:max-w-lg sm:rounded-xl">
         <div class="mb-3 flex items-center gap-2"><h3 class="flex-1 text-lg font-bold text-ink">${title}</h3>${Btn("✕", onclose, "ghost", 'aria-label="Close"')}</div>
         ${body}
       </div>
@@ -182,7 +182,7 @@
   const ATT_ICON = { photo: "📷", pdf: "📄", contract: "📑" };
   const attUrl = (a) => a.url || sessionUrls[a.id];
   const AttachChip = (a, previewCall, removeCall) => `
-    <span class="inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border-2 border-line bg-white pl-1 pr-1">
+    <span class="inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border border-line bg-white pl-1 pr-1">
       <button onclick="event.stopPropagation();${previewCall}" class="flex min-w-0 items-center gap-2 py-1">
         ${a.kind === "photo" && attUrl(a) ? `<img src="${attUrl(a)}" alt="" class="h-9 w-9 rounded-lg object-cover">` : `<span class="flex h-9 w-9 items-center justify-center rounded-lg bg-canvas text-lg">${ATT_ICON[a.kind]}</span>`}
         <span class="max-w-[9rem] truncate text-xs font-semibold text-ink">${esc(a.name)}</span>
@@ -691,7 +691,7 @@
         chips: [Badge(`→ ${esc(n.addressee)}`), ...(/\[[^\]]+ergänzen\]/.test(n.body) ? [Badge("✎ fill [gaps]", "amber")] : [])],
         primary: ["✓ Approve", `A.approveNotice('${n.id}')`, "success"],
         more: [["✎ Full editor", `A.openNotice('${n.id}')`], ["🖨 PDF", `A.print('${n.id}')`], ["⬇ .txt", `A.exportTxt('${n.id}')`]],
-        detail: `<textarea oninput="A.noticeBody('${n.id}', this.value)" class="h-64 w-full rounded-xl border-2 border-line bg-canvas p-3 font-mono text-xs leading-relaxed focus:border-sel focus:outline-none">${esc(n.body)}</textarea>` });
+        detail: `<textarea oninput="A.noticeBody('${n.id}', this.value)" class="h-64 w-full rounded-xl border border-line bg-canvas p-3 font-mono text-xs leading-relaxed focus:border-sel focus:outline-none">${esc(n.body)}</textarea>` });
     });
     if (sm) S.messages.filter((m) => m.status === "draft").forEach((m) => {
       const c = S.contacts.find((x) => x.id === m.to);
@@ -734,17 +734,20 @@
   const TONE_EDGE = { bad: "border-l-bad", warn: "border-l-warn", neutral: "border-l-line", ok: "border-l-ok" };
   function NeedCard(it) {
     const open = U.open[it.key];
-    const hasMore = (it.more && it.more.length) || it.detail;
+    const hasMore = (it.more && it.more.length) || it.detail || it.chips.length > 2;
+    const chips = [it.overdue ? OverdueChip() : "", ...it.chips].filter(Boolean);
     return `
-      <li class="rounded-2xl border-2 border-line border-l-[6px] ${TONE_EDGE[it.tone]} bg-white p-3" data-need="${it.key}">
-        <div class="flex items-start gap-2">
-          <span class="flex h-8 w-7 shrink-0 items-center justify-center text-xl">${it.icon}</span>
-          <p class="min-w-0 flex-1 pt-1 text-sm font-bold leading-snug ${open ? "" : "line-clamp-1"}">${it.title}</p>
-          ${hasMore ? `<button onclick="A.toggle('${it.key}')" class="-mr-1 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl font-black text-muted hover:bg-soft" aria-label="More">${open ? "✕" : "…"}</button>` : ""}
+      <li class="rounded-lg border border-line border-l-4 ${TONE_EDGE[it.tone]} bg-white px-3 py-2.5" data-need="${it.key}">
+        <div class="flex items-center gap-2">
+          <span class="w-6 shrink-0 text-center text-lg">${it.icon}</span>
+          <p class="min-w-0 flex-1 text-sm font-medium leading-snug ${open ? "" : "line-clamp-1"}">${it.title}</p>
+          ${hasMore ? `<button onclick="A.toggle('${it.key}')" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted hover:bg-soft" aria-label="More">${open ? "✕" : "⋯"}</button>` : ""}
         </div>
-        <div class="mt-1 flex flex-wrap gap-1 pl-9">${it.overdue ? OverdueChip() : ""}${it.chips.join("")}</div>
-        ${open ? `<div class="mt-3 space-y-2">${it.detail ?? ""}${it.more?.length ? `<div class="flex flex-wrap gap-2">${it.more.map(([l, c]) => Btn(l, c, "secondary")).join("")}</div>` : ""}</div>` : ""}
-        ${Btn(it.primary[0], it.primary[1], it.primary[2], "", "mt-2 w-full")}
+        <div class="mt-1.5 flex items-center gap-1 pl-8">
+          <div class="flex min-w-0 flex-1 flex-wrap gap-1">${(open ? chips : chips.slice(0, 2)).join("")}</div>
+          ${Btn(it.primary[0], it.primary[1], it.primary[2], "", "!min-h-9 shrink-0 !px-3")}
+        </div>
+        ${open ? `<div class="mt-3 space-y-2 pl-8">${it.detail ?? ""}${it.more?.length ? `<div class="flex flex-wrap gap-2">${it.more.map(([l, c]) => Btn(l, c, "secondary")).join("")}</div>` : ""}</div>` : ""}
       </li>`;
   }
 
@@ -773,19 +776,19 @@
     const wide = view === "plan" && ["timeline", "board", "site", "list"].includes(U.planTab);
 
     return `
-    <div class="min-h-screen bg-canvas lg:pl-24">
-      <aside class="fixed inset-y-0 left-0 z-30 hidden w-24 flex-col items-center gap-2 bg-ink py-4 text-white lg:flex">
-        <span class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-xl font-black">S</span>
+    <div class="min-h-screen bg-canvas lg:pl-60">
+      <aside class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-1 bg-[#2e2e30] px-3 py-4 text-white lg:flex">
+        <div class="mb-3 flex items-center gap-2 px-2"><span class="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-sm font-semibold">S</span><span class="font-semibold">SiteFlow</span></div>
+        <button onclick="A.record()" class="mb-3 flex h-10 items-center gap-2 rounded-full border border-white/25 px-3 text-sm hover:bg-white/10"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs">+</span>Create note</button>
         ${RailItem("☀", "Today", view === "today", "A.go('today')", needs)}
-        <button onclick="A.record()" class="my-2 flex h-16 w-16 items-center justify-center rounded-full bg-accent text-3xl shadow-lg ring-4 ring-accent/30 active:scale-95" aria-label="Record">🎙</button>
         ${RailItem("🗺", "Plan", view === "plan", "A.go('plan')")}
-        <button onclick="A.profile(true)" class="mt-auto rounded-full" aria-label="Profile">${Avatar(m.id, m.name, 44)}</button>
+        <button onclick="A.profile(true)" class="mt-auto flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-white/10" aria-label="Profile">${Avatar(m.id, m.name, 28)}<span class="truncate">${esc(m.name)}</span></button>
       </aside>
 
       <header class="sticky top-0 z-20 border-b border-line bg-white">
         <div class="flex items-center gap-2 px-4 py-2 sm:px-6">
           <div class="min-w-0 flex-1">
-            <h1 class="truncate text-xl font-black text-ink">${title}</h1>
+            <h1 class="truncate text-xl font-semibold text-ink">${title}</h1>
             ${view === "today" ? `<p class="text-xs font-semibold text-muted">${dayLabel(S.today)} · ${esc(m.name.split(" ")[0])}</p>` : view === "plan" ? `<p class="truncate text-xs font-semibold text-muted">${esc(S.project.name)}</p>` : ""}
           </div>
           <button onclick="A.profile(true)" class="flex h-11 w-11 items-center justify-center rounded-full lg:hidden" aria-label="Profile">${Avatar(m.id, m.name, 38)}</button>
@@ -815,9 +818,9 @@
     </div>`;
   }
   const RailItem = (icon, label, active, onclick, count) => `
-    <button onclick="${onclick}" class="relative flex h-16 w-20 flex-col items-center justify-center rounded-2xl text-xs font-bold ${active ? "bg-white text-ink" : "text-white/80 hover:bg-white/10"}">
-      <span class="text-2xl leading-none">${icon}</span>${label}
-      ${count ? `<span class="absolute right-2 top-1 rounded-full bg-accent px-1.5 text-[11px] text-white">${count}</span>` : ""}
+    <button onclick="${onclick}" class="flex h-9 items-center gap-2 rounded-md px-2 text-sm ${active ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10"}">
+      <span class="w-5 text-center">${icon}</span><span class="flex-1 text-left">${label}</span>
+      ${count ? `<span class="rounded-full bg-accent px-1.5 text-[11px] text-white">${count}</span>` : ""}
     </button>`;
   const BottomTab = (icon, label, active, onclick, count) => `
     <button onclick="${onclick}" class="relative flex min-h-[64px] flex-col items-center justify-center gap-0.5 text-xs font-bold ${active ? "text-accent" : "text-muted"}">
@@ -829,11 +832,11 @@
   function Profile() {
     return Modal("👤 Acting as", `
       <ul class="space-y-2">${PERSONAS.map((p) => `
-        <li><button onclick="A.persona('${p.id}')" class="flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-3 text-left ${p.id === S.persona ? "border-accent bg-accent-tint" : "border-line"}">
+        <li><button onclick="A.persona('${p.id}')" class="flex min-h-14 w-full items-center gap-3 rounded-lg border px-3 text-left ${p.id === S.persona ? "border-accent bg-accent-tint" : "border-line"}">
           ${Avatar(p.id, p.name, 36)}<span class="min-w-0 flex-1"><span class="block font-bold">${esc(p.name)}</span><span class="block truncate text-xs text-muted">${esc(p.role.split(" (")[0])}</span></span>${p.id === S.persona ? "✓" : ""}
         </button></li>`).join("")}</ul>
       <div class="mt-4 grid grid-cols-2 gap-2">
-        <a href="../public/platform.html" class="inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-line text-sm font-semibold">ⓘ How it works</a>
+        <a href="../public/platform.html" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-line text-sm font-semibold">ⓘ How it works</a>
         ${Btn("↺ Reset demo", "A.reset()", "secondary")}
       </div>`, "A.profile(false)");
   }
@@ -844,11 +847,11 @@
     return `
       ${RecordHero()}
       ${SectionTitle(`Needs you (${items.length})`)}
-      <ul class="space-y-2">${items.map(NeedCard).join("") || `<li class="rounded-2xl border-2 border-dashed border-line p-6 text-center text-3xl">✓</li>`}</ul>
+      <ul class="space-y-2">${items.map(NeedCard).join("") || `<li class="rounded-lg border border-dashed border-line p-6 text-center text-3xl">✓</li>`}</ul>
       ${MilestoneStrip()}
       ${MyTasks()}
       <div class="mt-6 flex flex-col items-center gap-2">
-        ${U.ai.text ? `<div class="w-full whitespace-pre-line rounded-2xl bg-white p-3 text-sm">${esc(U.ai.text)}<p class="mt-1 text-[11px] text-violet-700">${esc(U.ai.note)}</p></div>` : ""}
+        ${U.ai.text ? `<div class="w-full whitespace-pre-line rounded-lg bg-white p-3 text-sm">${esc(U.ai.text)}<p class="mt-1 text-[11px] text-violet-700">${esc(U.ai.note)}</p></div>` : ""}
         ${U.reportMenu ? `<div class="grid w-full grid-cols-2 gap-2">${Btn("✨ Summarise day", "A.summarise()")}${Btn("📄 Daily report", "A.dailyReport()", "primary")}</div>` : ""}
         ${Btn(U.reportMenu ? "✕" : "📄 Day report …", "A.reportMenu()", "ghost", 'aria-label="Day report"')}
       </div>`;
@@ -856,15 +859,14 @@
 
   function RecordHero() {
     const c = U.capture;
-    if (c.draft) return `<button onclick="A.go('record')" class="flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 border-accent bg-accent-tint px-4 text-left font-bold">📝 <span class="flex-1 truncate">${esc(c.draft.summary)}</span><span class="text-accent">Save →</span></button>`;
+    if (c.draft) return `<button onclick="A.go('record')" class="flex min-h-14 w-full items-center gap-3 rounded-lg border border-accent bg-accent-tint px-4 text-left font-bold">📝 <span class="flex-1 truncate">${esc(c.draft.summary)}</span><span class="text-accent">Save →</span></button>`;
     return `
-      <section class="flex items-center justify-center gap-6 rounded-3xl border-2 border-line bg-white p-5">
+      <section class="flex items-center gap-2">
+        <button onclick="A.record()" aria-label="Record note" class="flex h-14 flex-1 items-center justify-center gap-2 rounded-lg bg-accent text-base font-semibold text-white shadow-sm active:scale-[0.99]">🎙 Record a note</button>
         <div class="relative">
-          <button onclick="A.attachMenu('today')" class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-line bg-white text-2xl active:scale-95" aria-label="Attach">📎</button>
+          <button onclick="A.attachMenu('today')" class="flex h-14 w-14 items-center justify-center rounded-lg border border-line bg-white text-xl active:scale-95" aria-label="Attach">📎</button>
           ${U.attachMenu === "today" ? AttachMenu() : ""}
         </div>
-        <button onclick="A.record()" aria-label="Record note" class="flex h-28 w-28 items-center justify-center rounded-full bg-accent text-5xl text-white shadow-lg ring-8 ring-accent-soft active:scale-95">🎙</button>
-        <span class="h-16 w-16"></span>
       </section>`;
   }
 
@@ -882,7 +884,7 @@
     const list = sortTasks(S.tasks.filter((t) => t.status !== "done")
       .filter((t) => (isSM() ? sched[t.id].es <= S.today + 2 && sched[t.id].ef >= S.today : t.team === S.persona)), sched);
     return `${SectionTitle(isSM() ? `On site (${list.length})` : `My tasks (${list.length})`)}
-      <ul class="divide-y divide-soft rounded-2xl border border-line bg-white px-3">${list.map((t) => TaskRow(t, sched)).join("") || `<li class="py-4 text-center text-2xl">🎉</li>`}</ul>`;
+      <ul class="divide-y divide-soft rounded-lg border border-line bg-white px-3">${list.map((t) => TaskRow(t, sched)).join("") || `<li class="py-4 text-center text-2xl">🎉</li>`}</ul>`;
   }
   const TaskRow = (t, sched, link) => {
     const f = PERSONAS.find((p) => p.team === t.team);
@@ -909,7 +911,7 @@
     const item = (icon, label, inner) => `<label class="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl px-3 text-base font-semibold text-ink hover:bg-canvas"><span class="text-xl">${icon}</span>${label}${inner}</label>`;
     return `
       <div class="fixed inset-0 z-30" onclick="A.attachMenu(null)"></div>
-      <div class="absolute left-0 top-full z-40 mt-2 w-56 rounded-2xl border-2 border-line bg-white p-2 shadow-xl">
+      <div class="absolute left-0 top-full z-40 mt-2 w-56 rounded-lg border border-line bg-white p-2 shadow-xl">
         ${item("📄", "PDF", `<input type="file" accept="application/pdf,.pdf" class="hidden" onchange="A.attachFile(this,'pdf')">`)}
         ${item("📷", "Photo", `<input type="file" accept="image/*" class="hidden" onchange="A.attachFile(this,'photo')">`)}
         <button onclick="A.contractPicker(true)" class="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-base font-semibold text-ink hover:bg-canvas"><span class="text-xl">📑</span>Contract</button>
@@ -922,7 +924,7 @@
     return Modal("📑 Contract", `
       <input id="contract-search" class="${inputCls}" placeholder="🔍 Search" value="${esc(U.contractPicker.q)}" oninput="A.contractSearch(this.value)">
       <ul class="mt-3 space-y-2">${docs.map((d) => `
-        <li><button onclick="A.pickContract(${all.indexOf(d)})" class="flex min-h-12 w-full items-center gap-3 rounded-xl border-2 border-line px-3 py-2 text-left hover:bg-canvas">
+        <li><button onclick="A.pickContract(${all.indexOf(d)})" class="flex min-h-12 w-full items-center gap-3 rounded-xl border border-line px-3 py-2 text-left hover:bg-canvas">
           <span class="text-xl">${d.kind === "Contract" ? "📑" : /\.xlsx$/.test(d.name) ? "📊" : "📄"}</span>
           <span class="min-w-0 flex-1"><span class="block truncate text-sm font-semibold">${esc(d.name)}</span><span class="text-xs text-muted">${esc(d.kind)}${d.pages ? ` · ${d.pages} p.` : ""}</span></span>
         </button></li>`).join("") || `<li class="py-4 text-center text-sm text-muted">—</li>`}</ul>
@@ -931,9 +933,9 @@
   }
   function Preview() {
     const a = U.preview, url = attUrl(a);
-    const body = a.kind === "photo" && url ? `<img src="${url}" alt="" class="w-full rounded-2xl">`
-      : a.kind === "pdf" && url ? `<iframe src="${url}" class="h-[65vh] w-full rounded-2xl border-2 border-line" title="${esc(a.name)}"></iframe>`
-      : `<div class="flex flex-col items-center gap-2 rounded-2xl bg-canvas p-8 text-center"><span class="text-5xl">${ATT_ICON[a.kind]}</span>
+    const body = a.kind === "photo" && url ? `<img src="${url}" alt="" class="w-full rounded-lg">`
+      : a.kind === "pdf" && url ? `<iframe src="${url}" class="h-[65vh] w-full rounded-lg border border-line" title="${esc(a.name)}"></iframe>`
+      : `<div class="flex flex-col items-center gap-2 rounded-lg bg-canvas p-8 text-center"><span class="text-5xl">${ATT_ICON[a.kind]}</span>
           <p class="font-semibold">${esc(a.name)}</p>${a.docKind ? Badge(esc(a.docKind)) : ""}${a.session && !url ? Badge("not in this session", "amber") : ""}
           ${url ? `<a href="${url}" target="_blank" rel="noopener" class="mt-2 inline-flex min-h-11 items-center rounded-xl bg-accent px-4 font-semibold text-white">Open</a>` : ""}</div>`;
     return Modal(`${ATT_ICON[a.kind]} ${esc(a.name)}`, body, "A.closePreview()");
@@ -944,7 +946,7 @@
     return Modal(`${KIND_ICON[st.kind]} ${esc(st.text || "Step")}`, `
       <p class="mb-1 text-xs font-bold uppercase text-muted">Who</p>
       <div class="grid grid-cols-2 gap-2">${S.contacts.map((c) => `
-        <button onclick="A.step(${i},'who','${c.id}')" class="flex min-h-12 items-center gap-2 rounded-xl border-2 px-2 text-left text-sm font-semibold ${st.who === c.id ? "border-accent bg-accent-tint" : "border-line"}">${Avatar(c.id, c.name, 26)}<span class="truncate">${esc(shortName(c.id))}</span></button>`).join("")}</div>
+        <button onclick="A.step(${i},'who','${c.id}')" class="flex min-h-12 items-center gap-2 rounded-xl border px-2 text-left text-sm font-semibold ${st.who === c.id ? "border-accent bg-accent-tint" : "border-line"}">${Avatar(c.id, c.name, 26)}<span class="truncate">${esc(shortName(c.id))}</span></button>`).join("")}</div>
       <p class="mb-1 mt-4 text-xs font-bold uppercase text-muted">When</p>
       <div class="flex flex-wrap gap-2">${days.map((d) => chipBtn(shortDay(d), `A.step(${i},'dueDay',${d})`, st.dueDay === d)).join("")}${chipBtn("—", `A.step(${i},'dueDay','')`, st.dueDay === undefined)}</div>
       <div class="mt-4 grid grid-cols-[1fr_auto] gap-2">${Btn("✓ Done", "A.closePick()", "primary", "", "w-full")}${Btn("🗑", `A.removeStep(${i})`, "secondary", 'aria-label="Remove step"')}</div>`, "A.closePick()");
@@ -960,7 +962,7 @@
       <div class="flex justify-end">${langSwitch}</div>
       <div class="mt-6 flex items-center justify-center gap-6">
         <div class="relative">
-          <button onclick="A.attachMenu('record')" class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-line bg-white text-2xl active:scale-95" aria-label="Attach">📎${c.attachments.length ? `<span class="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 text-xs font-bold text-white">${c.attachments.length}</span>` : ""}</button>
+          <button onclick="A.attachMenu('record')" class="flex h-16 w-16 items-center justify-center rounded-full border border-line bg-white text-2xl active:scale-95" aria-label="Attach">📎${c.attachments.length ? `<span class="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 text-xs font-bold text-white">${c.attachments.length}</span>` : ""}</button>
           ${U.attachMenu === "record" ? AttachMenu() : ""}
         </div>
         <button onclick="A.mic()" aria-label="Record" class="flex h-36 w-36 items-center justify-center rounded-full text-6xl text-white shadow-xl ring-8 transition active:scale-95 ${c.listening ? "animate-pulse bg-bad ring-bad-soft" : "bg-accent ring-accent-soft"}">${c.listening ? "■" : "🎙"}</button>
@@ -970,7 +972,7 @@
       <textarea id="capture-text" rows="3" oninput="U.capture.text=this.value" onkeydown="A.typedKey(event)" onchange="A.typedDone(this.value)" class="${inputCls} mt-4" placeholder="${c.lang === "de-DE" ? "…oder tippen ↵" : "…or type ↵"}">${esc(c.text)}</textarea>
       ${atts ? `<div class="mt-3">${atts}</div>` : ""}
       <div class="mt-6 flex justify-center">${chipBtn(`🧪 Demo ${U.demo ? "on" : "off"}`, "A.demo()", U.demo)}</div>
-      ${U.demo ? `<div class="mt-3 flex flex-wrap justify-center gap-2">${samples.map((s) => `<button onclick="A.sample(${s.i})" class="min-h-11 rounded-full border-2 border-line bg-white px-3 text-xs font-semibold text-muted hover:border-accent">${esc(s.label)}</button>`).join("")}</div>` : ""}`;
+      ${U.demo ? `<div class="mt-3 flex flex-wrap justify-center gap-2">${samples.map((s) => `<button onclick="A.sample(${s.i})" class="min-h-11 rounded-full border border-line bg-white px-3 text-xs font-semibold text-muted hover:border-accent">${esc(s.label)}</button>`).join("")}</div>` : ""}`;
   }
 
   function ConfirmCard(atts) {
@@ -982,23 +984,23 @@
     const resp = d.fields.responsibleParty ? ` (${String(d.fields.responsibleParty).split(" (")[0].toLowerCase()})` : "";
     const steps = d.nextSteps ?? [];
     const ext = steps.filter((st) => ["notify", "contact", "task"].includes(st.kind) && S.contacts.find((x) => x.id === st.who && !x.usesApp));
-    const ask = d.ask === "delay" ? `<p class="text-sm font-bold">❓ How long?</p><div class="mt-2 flex flex-wrap gap-2">${[1, 2, 3].map((n) => `<button onclick="A.answer('estimatedDelayDays',${n})" class="min-h-11 rounded-full border-2 border-warn bg-white px-4 text-sm font-bold">${n} day${n > 1 ? "s" : ""}</button>`).join("")}</div>`
-      : d.ask === "responsible" ? `<p class="text-sm font-bold">❓ Who caused it?</p><div class="mt-2 flex flex-wrap gap-2">${PARTIES.map((p) => `<button onclick="A.answer('responsibleParty','${p}')" class="min-h-11 rounded-full border-2 border-warn bg-white px-3 text-sm font-semibold">${p.split(" (")[0]}</button>`).join("")}</div>`
-      : d.ask === "task" ? `<p class="text-sm font-bold">❓ Which task?</p><div class="mt-2 flex flex-wrap gap-2">${S.tasks.filter((x) => x.status !== "done" && (isSM() || x.team === S.persona)).slice(0, 6).map((x) => `<button onclick="A.answer('taskId','${x.id}')" class="min-h-11 rounded-full border-2 border-warn bg-white px-3 text-sm font-semibold">${esc(x.name)} ${esc(x.section)}</button>`).join("")}</div>`
+    const ask = d.ask === "delay" ? `<p class="text-sm font-bold">❓ How long?</p><div class="mt-2 flex flex-wrap gap-2">${[1, 2, 3].map((n) => `<button onclick="A.answer('estimatedDelayDays',${n})" class="min-h-11 rounded-full border border-warn bg-white px-4 text-sm font-bold">${n} day${n > 1 ? "s" : ""}</button>`).join("")}</div>`
+      : d.ask === "responsible" ? `<p class="text-sm font-bold">❓ Who caused it?</p><div class="mt-2 flex flex-wrap gap-2">${PARTIES.map((p) => `<button onclick="A.answer('responsibleParty','${p}')" class="min-h-11 rounded-full border border-warn bg-white px-3 text-sm font-semibold">${p.split(" (")[0]}</button>`).join("")}</div>`
+      : d.ask === "task" ? `<p class="text-sm font-bold">❓ Which task?</p><div class="mt-2 flex flex-wrap gap-2">${S.tasks.filter((x) => x.status !== "done" && (isSM() || x.team === S.persona)).slice(0, 6).map((x) => `<button onclick="A.answer('taskId','${x.id}')" class="min-h-11 rounded-full border border-warn bg-white px-3 text-sm font-semibold">${esc(x.name)} ${esc(x.section)}</button>`).join("")}</div>`
       : "";
     const stepChip = (st, i) => `
-      <button onclick="A.pickStep(${i})" class="inline-flex min-h-11 items-center gap-1.5 rounded-full border-2 ${st.source === "ai" ? "border-violet-300 bg-violet-50" : "border-line bg-white"} px-3 text-left text-sm font-semibold">
+      <button onclick="A.pickStep(${i})" class="inline-flex min-h-11 items-center gap-1.5 rounded-full border ${st.source === "ai" ? "border-violet-300 bg-violet-50" : "border-line bg-white"} px-3 text-left text-sm font-semibold">
         → ${KIND_VERB[st.kind]} ${st.who ? esc(shortName(st.who)) : "?"}${st.dueDay !== undefined ? `, ${shortDay(st.dueDay)}` : ""}
-        ${st.source === "ai" ? `<span class="rounded bg-violet-600 px-1 text-[10px] font-black text-white">AI</span>` : st.source === "user" ? `<span class="rounded bg-warn px-1 text-[10px] font-black text-white">YOU</span>` : ""}
+        ${st.source === "ai" ? `<span class="rounded bg-violet-600 px-1 text-[10px] font-semibold text-white">AI</span>` : st.source === "user" ? `<span class="rounded bg-warn px-1 text-[10px] font-semibold text-white">YOU</span>` : ""}
       </button>`;
     const detailKeys = ["cause", "responsibleParty", "startTime", "estimatedDelayDays", "material", "quantity"];
     return `
-      <section class="rounded-3xl border-2 ${prob ? "border-bad" : "border-line"} ${prob ? "border-l-[8px]" : ""} bg-white p-4">
-        <p class="text-base font-black leading-snug">${dot} ${head.map(esc).join(" · ")}</p>
+      <section class="rounded-xl border ${prob ? "border-bad" : "border-line"} ${prob ? "border-l-[8px]" : ""} bg-white p-4">
+        <p class="text-base font-semibold leading-snug">${dot} ${head.map(esc).join(" · ")}</p>
         ${d.fields.cause ? `<p class="mt-1 text-sm text-ink">Cause: ${esc(d.fields.cause)}${esc(resp)}</p>` : ""}
         <div class="mt-2 flex flex-wrap gap-1">${delay ? DelayChip(delay) : ""}${ext.length ? Badge(`✉ ${ext.length} update${ext.length > 1 ? "s" : ""}`, "blue") : ""}${t && delay && d.type !== "stoppage" ? Badge("📅 → site manager", "amber") : ""}</div>
         ${steps.length ? `<p class="mt-3 text-xs font-bold uppercase text-muted">Next</p><div class="mt-1 flex flex-wrap gap-2">${steps.map(stepChip).join("")}</div>` : ""}
-        ${ask ? `<div class="mt-3 rounded-2xl bg-warn-soft p-3">${ask}</div>` : ""}
+        ${ask ? `<div class="mt-3 rounded-lg bg-warn-soft p-3">${ask}</div>` : ""}
         ${atts ? `<div class="mt-3">${atts}</div>` : ""}
         <div class="mt-4 grid grid-cols-[1fr_auto] gap-2">${Btn("✓ Save", "A.saveLog()", "primary", "", "w-full text-base")}${Btn(U.details ? "▲" : "Edit details", "A.details()", "secondary")}</div>
         ${U.details ? `
@@ -1034,7 +1036,7 @@
   }
   function MoreMenu() {
     return Modal("⋯ More", `<ul class="space-y-2">${MORE_TABS.map(([id, icon, label]) => `
-      <li><button onclick="A.planTab('${id}')" class="flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-4 text-left text-base font-bold ${U.planTab === id ? "border-accent bg-accent-tint" : "border-line"}"><span class="text-xl">${icon}</span>${label}
+      <li><button onclick="A.planTab('${id}')" class="flex min-h-14 w-full items-center gap-3 rounded-lg border px-4 text-left text-base font-bold ${U.planTab === id ? "border-accent bg-accent-tint" : "border-line"}"><span class="text-xl">${icon}</span>${label}
         ${id === "docs" && S.notices.some((n) => n.status === "draft") ? Badge(String(S.notices.filter((n) => n.status === "draft").length), "accent", 'style="margin-left:auto"') : ""}</button></li>`).join("")}</ul>`, "A.more(false)");
   }
   function Plan() {
@@ -1056,7 +1058,7 @@
       const list = sortTasks(pool.filter((t) => t.team === team.id), sched);
       const col = U.collapsed[team.id];
       const od = list.filter(isOverdue).length;
-      return `<section class="rounded-2xl border border-line bg-white px-4">
+      return `<section class="rounded-lg border border-line bg-white px-4">
         <button onclick="A.collapse('${team.id}')" class="flex min-h-12 w-full items-center gap-2 text-left">
           <span class="h-3 w-3 rounded-full" style="background:${team.color}"></span><span class="flex-1 text-base font-bold">${team.name}</span>
           ${od ? Badge(`⏰ ${od}`, "overdue") : ""}${S.persona === team.id ? Badge("you", "accent") : ""}${Badge(String(list.length))}
@@ -1077,13 +1079,13 @@
     <div class="grid gap-3 lg:grid-cols-4">
       ${COLS.map(([status, label, dot]) => {
         const list = sortTasks(pool.filter((t) => t.status === status), sched);
-        return `<div data-col="${status}" ondragover="A.dragOver(event,'${status}')" ondrop="event.preventDefault();A.drop('${status}')" class="rounded-2xl bg-soft p-2 ring-sel/40 transition">
+        return `<div data-col="${status}" ondragover="A.dragOver(event,'${status}')" ondrop="event.preventDefault();A.drop('${status}')" class="rounded-lg bg-soft p-2 ring-sel/40 transition">
           <p class="flex min-h-10 items-center gap-2 px-2 text-sm font-bold"><span class="h-3 w-3 rounded-full" style="background:${dot}"></span>${label} ${Badge(String(list.length), "outline")}</p>
           <div class="space-y-2">${list.map((t) => {
             const team = TEAMS.find((x) => x.id === t.team), f = PERSONAS.find((p) => p.team === t.team), s = sched[t.id];
             const ed = canEdit(t), od = isOverdue(t), lk = link[t.id];
             return `<div ${ed ? `draggable="true" ondragstart="A.dragStart(event,'${t.id}')"` : ""} role="button" tabindex="0" onclick="A.openTask('${t.id}')"
-              class="cursor-pointer rounded-2xl border-2 ${od ? "border-bad" : "border-line"} bg-white p-3 ${lk ? "opacity-60" : ""}">
+              class="cursor-pointer rounded-lg border ${od ? "border-bad" : "border-line"} bg-white p-3 ${lk ? "opacity-60" : ""}">
               <div class="flex items-start gap-3">${CheckCircle(t.status === "done", `A.toggleDone('${t.id}')`, !ed)}
                 <p class="flex-1 text-sm font-bold leading-snug ${t.status === "done" ? "text-faint line-through" : ""}">${esc(t.name)} ${esc(t.section)}</p>${Avatar(f.id, f.name, 28)}</div>
               <div class="mt-2 flex flex-wrap items-center gap-1">
@@ -1109,7 +1111,7 @@
     const ms = scopeMilestones();
     const slips = milestoneSlips(S.tasks, sched).filter((s) => ms.some((m) => m.id === s.milestone.id));
     return `${ScopeBar()}
-    <div class="rounded-2xl border border-line bg-white">
+    <div class="rounded-lg border border-line bg-white">
       <div class="flex flex-wrap gap-1 px-3 pt-3">${slips.map((s) => Badge(`◆ ${s.milestone.id} ${s.slip ? `+${s.slip} d` : "✓"}`, s.slip ? "red" : "green", `title="${esc(s.milestone.name)}"`)).join("")}
         <span class="ml-auto flex flex-wrap gap-1">${Badge("▨ delay", "amber")}${Badge("⛔", "blocked")}${Badge("⏰", "overdue")}${Badge("⚠ missing", "outline")}</span></div>
       <div class="overflow-x-auto px-3 pb-3 pt-2"><div class="min-w-[520px]">
@@ -1138,7 +1140,7 @@
             }).join("")}
           </div>`).join("")}
         <div class="grid pt-2 text-center text-xs" style="${COLS}"><div class="sticky left-0 bg-white text-left font-bold text-muted">◆</div>
-          ${DAYS.map((d) => `<div>${ms.filter((m) => m.targetDay === d).map((m) => `<span title="${esc(m.name)}" class="font-black text-warn">◆${m.id}</span>`).join("")}</div>`).join("")}</div>
+          ${DAYS.map((d) => `<div>${ms.filter((m) => m.targetDay === d).map((m) => `<span title="${esc(m.name)}" class="font-semibold text-warn">◆${m.id}</span>`).join("")}</div>`).join("")}</div>
       </div></div>
     </div>`;
   }
@@ -1204,11 +1206,11 @@
       const [cls, icon] = ts.some(isOverdue) ? ["bg-bad text-white", "⏰"] : ts.some((t) => t.status === "blocked") ? ["bg-ink text-white", "⛔"]
         : ts.some((t) => t.delayDays > 0 && t.status !== "done") ? ["bg-warn-soft text-warn", "⏱"] : ts.every((t) => t.status === "done") ? ["bg-ok-soft text-ok", "✓"]
         : ts.some((t) => t.status === "in-progress") ? ["bg-sel-soft text-sel", "▶"] : ["bg-white text-ink", ""];
-      return `<button onclick="A.siteSection('${s}')" class="flex h-12 items-center justify-center gap-1 rounded-lg border-2 ${sel === s ? "border-accent" : "border-line"} text-sm font-bold ${cls}">${icon} ${ts.length}</button>`;
+      return `<button onclick="A.siteSection('${s}')" class="flex h-12 items-center justify-center gap-1 rounded-lg border ${sel === s ? "border-accent" : "border-line"} text-sm font-bold ${cls}">${icon} ${ts.length}</button>`;
     };
     const building = `
       <div class="grid gap-1.5" style="grid-template-columns:76px repeat(${sections.length},1fr)">
-        <div></div>${sections.map((s) => `<button onclick="A.siteSection('${s}')" class="min-h-11 rounded-lg text-base font-black ${sel === s ? "bg-accent text-white" : "bg-soft"}">${s}</button>`).join("")}
+        <div></div>${sections.map((s) => `<button onclick="A.siteSection('${s}')" class="min-h-11 rounded-lg text-base font-semibold ${sel === s ? "bg-accent text-white" : "bg-soft"}">${s}</button>`).join("")}
         ${levels.map((l) => `<div class="flex items-center text-xs font-bold text-muted">${l}</div>${sections.map((s) => cell(s, l)).join("")}`).join("")}
       </div>`;
     const tasks = sortTasks(pool.filter((t) => !sel || keyOf(t) === sel), sched);
@@ -1217,7 +1219,7 @@
     return `
       <div class="space-y-3">
         <div class="flex flex-wrap items-center gap-1">${Badge("⚠ problem", "red")}${Badge("⏰ overdue", "overdue")}${Badge("⛔ blocked", "blocked")}${Badge("⏱ delay", "amber")}</div>
-        <section class="overflow-hidden rounded-2xl border border-line bg-white">
+        <section class="overflow-hidden rounded-lg border border-line bg-white">
           ${plan}
           <div class="flex items-center gap-2 border-t border-line px-3 py-2"><span class="min-w-0 flex-1 truncate text-sm font-semibold">📍 ${esc(S.project.address)}</span>
             <a href="${mapsUrl}" target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-sel">🗺 Map ↗</a></div>
@@ -1254,7 +1256,7 @@
           ${Btn("✕", "A.closeTask()", "ghost", 'aria-label="Close"')}
         </div>
         <div class="flex-1 overflow-y-auto px-4 pb-24 pt-4">
-          <h2 class="text-2xl font-black ${done ? "text-faint line-through" : ""}">${esc(t.name)} ${esc(t.section)}</h2>
+          <h2 class="text-2xl font-semibold ${done ? "text-faint line-through" : ""}">${esc(t.name)} ${esc(t.section)}</h2>
           <div class="mt-2 flex flex-wrap gap-1">${StatusChips(t)}${lk ? Badge(`🔗 ${lk}`) : ""}</div>
           <div class="mt-3 divide-y divide-soft">
             ${Row("👤", `<span class="inline-flex items-center gap-2">${Avatar(f.id, f.name)}<b>${esc(f.name)}</b><span class="text-muted">${esc(team.company)}</span></span>`)}
@@ -1264,7 +1266,7 @@
             ${Row("↩", t.predecessors.length ? t.predecessors.map((p) => Badge(esc(taskLabel(p)))).join(" ") : "—")}
             ${ms ? Row("◆", `<span class="font-bold text-warn">${esc(ms.name)}</span> · ${dayLabel(ms.targetDay)}`) : ""}
           </div>
-          <p class="mb-2 mt-4 text-xs font-black uppercase tracking-wide text-muted">What's missing</p>
+          <p class="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted">What's missing</p>
           <div class="flex flex-wrap gap-1.5">${KEYS.map((k) => {
             const it = t.readiness[k], open = it?.state === "open";
             return open && ed ? `<button onclick="A.clearBlocker('${t.id}','${k}',true)" title="${esc(it?.note)}" class="min-h-11 rounded-full bg-bad-soft px-3 text-xs font-bold text-bad">✗ ${k} · clear</button>`
@@ -1272,7 +1274,7 @@
           }).join("")}</div>
           ${KEYS.filter((k) => t.readiness[k]?.state === "open").map((k) => `<p class="mt-2 text-xs font-semibold text-bad">${esc(t.readiness[k].note)} · 👤 ${esc(t.readiness[k].owner)} · ⏳ ${dayLabel(t.readiness[k].dueDay ?? 0)}</p>`).join("")}
           ${ed ? `
-          <div class="mt-4 space-y-2 rounded-2xl border-2 border-line p-3">
+          <div class="mt-4 space-y-2 rounded-lg border border-line p-3">
             ${Stepper("▶", dayLabel(Math.max(0, t.plannedStart + e.shift)), "A.ed('shift',-1)", "A.ed('shift',1)")}
             ${Stepper("⏱", `${e.dur} d`, "A.ed('dur',-1)", "A.ed('dur',1)")}
             <div class="flex items-center gap-2"><span class="w-6 text-center text-lg">🏷</span><select class="${inputCls}" onchange="A.ed('status', this.value)">${options(["planned", "in-progress", "blocked", "done"].map((x) => [x, x]), e.status)}</select></div>
@@ -1296,7 +1298,7 @@
     const open = S.todos.filter((t) => t.entryId === e.id && t.status === "open").length;
     const atts = e.attachments ?? [];
     return `
-      <article ${compact ? `role="button" onclick="A.openLog('${e.id}')"` : ""} class="rounded-2xl border-2 ${prob ? "border-l-[6px] border-bad-soft border-l-bad" : "border-line"} bg-white p-3 ${compact ? "cursor-pointer" : ""}">
+      <article ${compact ? `role="button" onclick="A.openLog('${e.id}')"` : ""} class="rounded-lg border ${prob ? "border-l-[6px] border-bad-soft border-l-bad" : "border-line"} bg-white p-3 ${compact ? "cursor-pointer" : ""}">
         <div class="flex flex-wrap items-center gap-1.5">
           ${prob ? `<span class="text-lg leading-none text-bad">⚠</span>` : ""}
           ${Avatar(e.author, contactName(e.author), 22)}
@@ -1341,7 +1343,7 @@
       <textarea class="${inputCls} min-h-40 text-sm" placeholder="Paste minutes" oninput="U.minutes.text=this.value">${esc(M.text)}</textarea>
       <div class="mt-2 grid grid-cols-2 gap-2">${Btn("Split →", "A.minutesSplit()", "primary", "", "w-full")}${Btn("🧪 Sample", "A.minutesSample()", "secondary", "", "w-full")}</div>` : `
       <ul class="space-y-2">${M.res.items.map((it, i) => `
-        <li><label class="flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 ${M.keep[i] ? "border-line" : "border-dashed border-line opacity-50"}">
+        <li><label class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${M.keep[i] ? "border-line" : "border-dashed border-line opacity-50"}">
           <input type="checkbox" class="mt-1 h-5 w-5 accent-[#c2410c]" ${M.keep[i] ? "checked" : ""} onchange="A.minutesKeep(${i})">
           <span class="min-w-0 flex-1 text-sm">${esc(it.text)}
             <span class="mt-1 flex flex-wrap gap-1">${Badge(it.type)}${it.taskId ? Badge(`🔗 ${it.taskId}`) : ""}
@@ -1372,13 +1374,13 @@
     return `
       <div class="space-y-3">
         <ul class="space-y-2">${S.notices.map((n) => `
-          <li><button onclick="A.selectNotice('${n.id}')" class="w-full rounded-2xl border-2 p-3 text-left ${sel?.id === n.id ? "border-sel bg-sel-soft" : "border-line bg-white"}">
+          <li><button onclick="A.selectNotice('${n.id}')" class="w-full rounded-lg border p-3 text-left ${sel?.id === n.id ? "border-sel bg-sel-soft" : "border-line bg-white"}">
             <div class="flex items-center justify-between gap-2"><span class="text-sm font-bold">${esc(n.title)}</span>${Badge(n.status === "approved" ? "✓ approved" : "✎ draft", n.status === "approved" ? "green" : "stone")}</div>
             <div class="mt-1 flex flex-wrap gap-1">${Badge(n.mode === "reactive" ? "problem" : n.mode === "preventive" ? "risk" : "report", n.mode === "reactive" ? "red" : n.mode === "preventive" ? "green" : "stone")}${Badge(`→ ${esc(n.addressee)}`)}</div>
           </button></li>`).join("") || `<li class="py-10 text-center text-4xl">📄</li>`}</ul>
         ${sel ? Card(esc(sel.title), `
           <p class="mb-2 text-xs font-semibold text-muted">${NOTICE_LABEL[sel.type]}</p>
-          <textarea ${sel.status !== "draft" ? "readonly" : ""} oninput="A.noticeBody('${sel.id}', this.value)" class="h-[55vh] w-full rounded-xl border-2 border-line bg-canvas p-3 font-mono text-[13px] leading-relaxed focus:border-sel focus:outline-none">${esc(sel.body)}</textarea>
+          <textarea ${sel.status !== "draft" ? "readonly" : ""} oninput="A.noticeBody('${sel.id}', this.value)" class="h-[55vh] w-full rounded-xl border border-line bg-canvas p-3 font-mono text-[13px] leading-relaxed focus:border-sel focus:outline-none">${esc(sel.body)}</textarea>
           <div class="mt-2 grid grid-cols-3 gap-2">
             ${Btn("🖨 PDF", `A.print('${sel.id}')`, "secondary", "", "w-full")}${Btn("⬇ .txt", `A.exportTxt('${sel.id}')`, "secondary", "", "w-full")}
             ${sel.status === "draft" ? Btn("✓ Approve", `A.approveNotice('${sel.id}')`, "success", isSM() ? "" : 'disabled title="Site manager only"', "w-full") : Badge("🔒 approved", "green", 'style="justify-content:center"')}

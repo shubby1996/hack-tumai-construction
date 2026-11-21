@@ -886,8 +886,7 @@
   function Today() {
     const items = needsYou();
     return `
-      ${RecordHero()}
-      ${MilestoneStrip()}
+      ${U.capture.draft ? RecordHero() : ""}
       ${SectionTitle(`Needs you <span class="font-normal text-faint">${items.length}</span>`)}
       ${items.length ? `<ul class="divide-y divide-soft overflow-hidden rounded-lg border border-line bg-white">${items.map(NeedCard).join("")}</ul>` : `<p class="rounded-lg border border-line bg-white px-4 py-5 text-center text-sm text-muted">All clear</p>`}
       ${MyTasks()}
@@ -1248,81 +1247,95 @@
     const sections = [...new Set(pool.map((t) => t.section).filter(Boolean))].sort();
     const keyOf = (t) => t.section || "Site";
     const entries = S.entries.filter((e) => isSM() || pool.some((t) => t.id === e.fields?.taskId) || e.author === S.persona);
-    const markersFor = (key) => {
-      const out = [];
-      pool.filter((t) => keyOf(t) === key).forEach((t) => {
-        if (isOverdue(t)) out.push({ icon: "⏰", color: "#b91c1c", call: `A.openTask('${t.id}')`, label: taskLabel(t.id) });
-        if (t.status === "blocked") out.push({ icon: "⛔", color: "#18181b", call: `A.openTask('${t.id}')`, label: taskLabel(t.id) });
-        else if (t.delayDays > 0 && t.status !== "done") out.push({ icon: "⏱", color: "#a16207", call: `A.openTask('${t.id}')`, label: taskLabel(t.id) });
-      });
-      entries.filter((e) => isProblem(e) && (sectionOfEntry(e) || "Site") === key).forEach((e) => out.push({ icon: "⚠", color: "#b91c1c", call: `A.openLog('${e.id}')`, label: e.summary }));
-      return out;
-    };
-    const tone = (key) => {
-      const ts = pool.filter((t) => keyOf(t) === key), m = markersFor(key);
-      if (m.some((x) => x.icon === "⏰" || x.icon === "⚠")) return { fill: "#fee2e2", stroke: "#b91c1c" };
-      if (m.some((x) => x.icon === "⛔")) return { fill: "#e4e4e7", stroke: "#18181b" };
-      if (m.length) return { fill: "#fef3c7", stroke: "#a16207" };
-      if (ts.length && ts.every((t) => t.status === "done")) return { fill: "#dcfce7", stroke: "#15803d" };
-      return { fill: "#ffffff", stroke: "#71717a" };
-    };
     const sel = U.site.section;
-    const W = 360, bx = 70, bw = 230, by = 40, bh = 96;
+    const C = { problem: "#b91c1c", overdue: "#b91c1c", blocked: "#1e1f21", delay: "#d97706" };
+    const stats = (key) => {
+      const ts = pool.filter((t) => keyOf(t) === key);
+      const open = ts.filter((t) => t.status !== "done");
+      return {
+        ts, open: open.length,
+        problem: entries.filter((e) => isProblem(e) && (sectionOfEntry(e) || "Site") === key).length,
+        overdue: ts.filter(isOverdue).length,
+        blocked: ts.filter((t) => t.status === "blocked").length,
+        delay: open.filter((t) => t.delayDays > 0).length,
+        missing: open.filter((t) => missingCount(t)).length,
+        done: ts.length && ts.every((t) => t.status === "done"),
+      };
+    };
+    const look = (st) => st.problem || st.overdue ? { fill: "#fdecec", stroke: "#e5a3a3", dot: C.problem }
+      : st.blocked ? { fill: "#f1f1f1", stroke: "#9ca0a4", dot: C.blocked }
+      : st.delay ? { fill: "#fff6e5", stroke: "#f0c77a", dot: C.delay }
+      : st.done ? { fill: "#e9f7ee", stroke: "#9fd5b1", dot: null } : { fill: "#ffffff", stroke: "#d6d6d6", dot: null };
+    const flags = (st) => st.problem + st.overdue + st.blocked + st.delay;
+    const metaOf = (st) => [`${st.open} open`, st.problem ? `<span class="text-bad">${st.problem} problem${st.problem > 1 ? "s" : ""}</span>` : "", st.overdue ? `<span class="text-bad">${st.overdue} overdue</span>` : "",
+      st.blocked ? `<span class="text-ink">${st.blocked} blocked</span>` : "", st.delay ? `<span class="text-warn">${st.delay} delayed</span>` : "", st.missing ? `${st.missing} missing item${st.missing > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
+
+    // ---- drawn site plan
+    const W = 360, H = 210, bx = 56, bw = 248, by = 34, bh = 92;
     const sw = sections.length ? bw / sections.length : bw;
-    const pins = (key, x, y, w) => markersFor(key).slice(0, 4).map((m, i) => `
-      <g onclick="event.stopPropagation();${m.call}" style="cursor:pointer"><title>${esc(m.label)}</title>
-        <circle cx="${x + 14 + i * 22}" cy="${y + 14}" r="10" fill="${m.color}"/><text x="${x + 14 + i * 22}" y="${y + 18.5}" font-size="11" text-anchor="middle" fill="#fff">${m.icon}</text></g>`).join("")
-      + (markersFor(key).length > 4 ? `<text x="${x + w - 6}" y="${y + 18}" font-size="10" text-anchor="end" font-weight="700">+${markersFor(key).length - 4}</text>` : "");
-    const road = tone("Site");
+    const badge = (x, y, n, color) => n ? `<g><circle cx="${x}" cy="${y}" r="9" fill="${color}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y + 3.5}" font-size="10" font-weight="600" text-anchor="middle" fill="#fff">${n}</text></g>` : "";
+    const site = stats("Site"), siteLook = look(site);
     const plan = `
-      <svg viewBox="0 0 ${W} 240" class="w-full" role="img" aria-label="Site plan">
-        <rect x="0" y="0" width="${W}" height="240" fill="#f4f4f5"/>
-        <rect x="20" y="20" width="${W - 40}" height="170" rx="6" fill="#fafaf9" stroke="#a1a1aa" stroke-dasharray="6 4"/>
-        ${sections.map((s, i) => { const t = tone(s), x = bx + i * sw; return `
-          <g onclick="A.siteSection('${s}')" style="cursor:pointer">
-            <rect x="${x}" y="${by}" width="${sw}" height="${bh}" fill="${t.fill}" stroke="${sel === s ? "#c2410c" : t.stroke}" stroke-width="${sel === s ? 5 : 2.5}"/>
-            <text x="${x + sw / 2}" y="${by + bh / 2 + 14}" font-size="34" font-weight="900" text-anchor="middle" fill="#18181b" opacity=".85">${s}</text>
-            ${pins(s, x, by, sw)}
+      <svg viewBox="0 0 ${W} ${H}" class="block w-full" role="img" aria-label="Site plan">
+        <defs><pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#e4e4e4"/></pattern></defs>
+        <rect width="${W}" height="${H}" fill="#fbfbfb"/><rect width="${W}" height="${H - 34}" fill="url(#dots)"/>
+        <rect x="24" y="16" width="${W - 48}" height="${H - 62}" rx="10" fill="none" stroke="#d4d4d4" stroke-dasharray="5 4"/>
+        ${sections.map((sec, k) => { const st = stats(sec), lk = look(st), x = bx + k * sw, on = sel === sec;
+          return `<g onclick="A.siteSection('${sec}')" style="cursor:pointer">
+            <rect x="${x + 2}" y="${by}" width="${sw - 4}" height="${bh}" rx="8" fill="${lk.fill}" stroke="${on ? "#f06a6a" : lk.stroke}" stroke-width="${on ? 2.5 : 1.25}"/>
+            <text x="${x + sw / 2}" y="${by + bh / 2 + 2}" font-size="22" font-weight="600" text-anchor="middle" fill="#1e1f21">${sec}</text>
+            <text x="${x + sw / 2}" y="${by + bh / 2 + 20}" font-size="10" text-anchor="middle" fill="#6d6e6f">${st.open} open</text>
+            ${badge(x + sw - 12, by + 10, flags(st), lk.dot || "#6d6e6f")}
           </g>`; }).join("")}
         <g onclick="A.siteSection('Site')" style="cursor:pointer">
-          <rect x="150" y="${by + bh + 8}" width="34" height="${190 - by - bh - 8}" fill="${road.fill}" stroke="${sel === "Site" ? "#c2410c" : road.stroke}" stroke-width="${sel === "Site" ? 4 : 2}"/>
-          <text x="167" y="${by + bh + 32}" font-size="10" text-anchor="middle" fill="#3f3f46" font-weight="700">road</text>
-          ${pins("Site", 146, by + bh + 34, 30)}
+          <rect x="162" y="${by + bh + 6}" width="36" height="${H - 34 - (by + bh + 6)}" rx="3" fill="${sel === "Site" ? "#fde3e3" : "#efefef"}"/>
+          <text x="180" y="${by + bh + 26}" font-size="9" text-anchor="middle" fill="#6d6e6f">Access</text>
+          ${badge(196, by + bh + 12, flags(site), siteLook.dot || "#6d6e6f")}
         </g>
-        <text x="30" y="34" font-size="16">🏗</text><text x="310" y="180" font-size="16">📦</text><text x="${W - 38}" y="44" font-size="12" font-weight="800" fill="#3f3f46">N↑</text>
-        <rect x="0" y="196" width="${W}" height="30" fill="#d4d4d8"/>
-        <text x="${W / 2}" y="215" font-size="11" text-anchor="middle" fill="#18181b" font-weight="700">${esc(S.project.address.split(",")[0])}</text>
-        <g><circle cx="167" cy="196" r="9" fill="#c2410c"/><text x="167" y="200" font-size="10" text-anchor="middle" fill="#fff">📍</text></g>
+        <g transform="translate(${W - 34},26)"><path d="M0 10 L5 -2 L10 10 L5 7 Z" fill="#9ca0a4"/><text x="5" y="22" font-size="9" text-anchor="middle" fill="#9ca0a4">N</text></g>
+        <rect x="0" y="${H - 34}" width="${W}" height="34" fill="#ececec"/>
+        <line x1="0" x2="${W}" y1="${H - 17}" y2="${H - 17}" stroke="#fff" stroke-width="2" stroke-dasharray="10 8"/>
+        <text x="14" y="${H - 21}" font-size="9" fill="#6d6e6f">${esc(S.project.address.split(",")[0])}</text>
       </svg>`;
-    const levels = LEVELS.filter((l) => pool.some((t) => t.section && levelOf(t.name) === l));
-    const cell = (s, l) => {
-      const ts = pool.filter((t) => t.section === s && levelOf(t.name) === l);
-      if (!ts.length) return `<div class="h-12 rounded-lg bg-canvas"></div>`;
-      const [cls, icon] = ts.some(isOverdue) ? ["bg-bad text-white", "⏰"] : ts.some((t) => t.status === "blocked") ? ["bg-ink text-white", "⛔"]
-        : ts.some((t) => t.delayDays > 0 && t.status !== "done") ? ["bg-warn-soft text-warn", "⏱"] : ts.every((t) => t.status === "done") ? ["bg-ok-soft text-ok", "✓"]
-        : ts.some((t) => t.status === "in-progress") ? ["bg-sel-soft text-sel", "▶"] : ["bg-white text-ink", ""];
-      return `<button onclick="A.siteSection('${s}')" class="flex h-12 items-center justify-center gap-1 rounded-lg border ${sel === s ? "border-accent" : "border-line"} text-sm font-bold ${cls}">${icon} ${ts.length}</button>`;
-    };
-    const building = `
-      <div class="grid gap-1.5" style="grid-template-columns:76px repeat(${sections.length},1fr)">
-        <div></div>${sections.map((s) => `<button onclick="A.siteSection('${s}')" class="min-h-11 rounded-lg text-base font-semibold ${sel === s ? "bg-accent text-white" : "bg-soft"}">${s}</button>`).join("")}
-        ${levels.map((l) => `<div class="flex items-center text-xs font-bold text-muted">${l}</div>${sections.map((s) => cell(s, l)).join("")}`).join("")}
-      </div>`;
-    const tasks = sortTasks(pool.filter((t) => !sel || keyOf(t) === sel), sched);
-    const notes = entries.filter((e) => !sel || (sectionOfEntry(e) || "Site") === sel);
+
+    // ---- section list (or the selected section's levels, tasks and notes)
+    const keys = [...sections, ...(stats("Site").ts.length || stats("Site").problem ? ["Site"] : [])];
+    const tile = (key) => { const lk = look(stats(key)); return `<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border text-sm font-semibold text-ink" style="background:${lk.fill};border-color:${lk.stroke}">${key === "Site" ? Ic("pin", "h-4 w-4") : key}</span>`; };
+    const list = `
+      <ul class="divide-y divide-soft overflow-hidden rounded-lg border border-line bg-white">${keys.map((key) => `
+        <li><button onclick="A.siteSection('${key}')" class="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-canvas">
+          ${tile(key)}
+          <span class="min-w-0 flex-1"><span class="block text-sm font-medium text-ink">${key === "Site" ? "Access & site" : `Section ${key}`}</span><span class="block truncate text-xs text-muted">${metaOf(stats(key))}</span></span>
+          <span class="text-faint">${Ic("chev", "h-4 w-4")}</span>
+        </button></li>`).join("")}</ul>`;
+    let detail = "";
+    if (sel) {
+      const st = stats(sel);
+      const levels = LEVELS.filter((l) => st.ts.some((t) => levelOf(t.name) === l));
+      const tasks = sortTasks(st.ts, sched);
+      const notes = entries.filter((e) => (sectionOfEntry(e) || "Site") === sel);
+      detail = `
+        <div class="mb-2 flex items-center gap-2">
+          <button onclick="A.siteSection('${sel}')" class="flex h-8 items-center gap-1 rounded-full border border-line bg-white pl-2 pr-3 text-[13px] text-muted"><span class="rotate-180">${Ic("chev", "h-4 w-4")}</span>All sections</button>
+          <h2 class="text-[15px] font-semibold text-ink">${sel === "Site" ? "Access & site" : `Section ${sel}`}</h2>
+        </div>
+        ${levels.length ? `<div class="mb-3 flex gap-1.5 overflow-x-auto">${levels.map((l) => { const n = st.ts.filter((t) => levelOf(t.name) === l && t.status !== "done").length; return `<span class="flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-line bg-white px-2.5 text-xs text-ink">${esc(l)} <span class="text-faint">${n}</span></span>`; }).join("")}</div>` : ""}
+        <ul class="divide-y divide-soft rounded-lg border border-line bg-white px-3">${tasks.map((t) => TaskRow(t, sched, link[t.id])).join("") || `<li class="py-4 text-center text-sm text-muted">No tasks here</li>`}</ul>
+        ${SectionTitle(`Site notes <span class="font-normal text-faint">${notes.length}</span>`)}
+        ${notes.length ? `<ul class="space-y-2">${notes.map((e) => `<li>${LogCard(e, true)}</li>`).join("")}</ul>` : `<p class="rounded-lg border border-line bg-white px-4 py-4 text-center text-sm text-muted">No notes yet</p>`}`;
+    }
+    const dot = (c, l) => `<span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full" style="background:${c}"></span>${l}</span>`;
     const mapsUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(S.project.address)}`;
     return `
-      <div class="space-y-3">
-        <div class="flex flex-wrap items-center gap-1">${Badge("⚠ problem", "red")}${Badge("⏰ overdue", "overdue")}${Badge("⛔ blocked", "blocked")}${Badge("⏱ delay", "amber")}</div>
-        <section class="overflow-hidden rounded-lg border border-line bg-white">
-          ${plan}
-          <div class="flex items-center gap-2 border-t border-line px-3 py-2"><span class="min-w-0 flex-1 truncate text-sm font-semibold">📍 ${esc(S.project.address)}</span>
-            <a href="${mapsUrl}" target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-sel">🗺 Map ↗</a></div>
-        </section>
-        ${Card("🏢 Building", building, sel ? chipBtn(`✕ ${sel}`, `A.siteSection('${sel}')`, true) : "")}
-        ${Card(`✔︎ Tasks${sel ? ` · ${sel}` : ""}`, `<ul class="divide-y divide-soft">${tasks.map((t) => TaskRow(t, sched, link[t.id])).join("") || `<li class="py-2 text-sm text-faint">—</li>`}</ul>`, Badge(String(tasks.length)))}
-        ${Card(`📒 Site notes${sel ? ` · ${sel}` : ""}`, `<ul class="space-y-2">${notes.map((e) => `<li>${LogCard(e, true)}</li>`).join("") || `<li class="text-sm text-faint">—</li>`}</ul>`, Badge(String(notes.length)))}
-      </div>`;
+      <section class="overflow-hidden rounded-lg border border-line bg-white">
+        ${plan}
+        <div class="flex items-center gap-2 border-t border-soft px-3 py-2">
+          <span class="text-muted">${Ic("pin", "h-4 w-4")}</span><span class="min-w-0 flex-1 truncate text-[13px] text-ink">${esc(S.project.address)}</span>
+          <a href="${mapsUrl}" target="_blank" rel="noopener" class="text-[13px] font-medium text-sel">Open map</a>
+        </div>
+      </section>
+      <div class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted">${dot(C.problem, "Problem or overdue")}${dot(C.delay, "Delay")}${dot(C.blocked, "Blocked")}</div>
+      <div class="mt-4">${sel ? detail : `${SectionTitle("Sections")}${list}`}</div>`;
   }
 
   // ---- Task drawer

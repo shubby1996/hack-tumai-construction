@@ -32,7 +32,7 @@
 
   // UI-only state (not persisted)
   const U = {
-    view: "today", planTab: "timeline", moreOpen: false, profileOpen: false, openTask: null, toast: null,
+    view: "record", planTab: "timeline", moreOpen: false, profileOpen: false, openTask: null, toast: null,
     capture: { lang: "de-DE", text: "", attachments: [], draft: null, usedVoice: false, listening: false },
     demo: false, details: false, stepPick: null, attachMenu: null, contractPicker: null, preview: null, logModal: null,
     open: {}, last: null, edit: null, collapsed: {}, editMsg: {}, reportMenu: false,
@@ -147,6 +147,7 @@
     chev: '<path d="m9 18 6-6-6-6"/>',
     book: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+    today: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
     stop: '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>',
   };
   const Ic = (name, cls = "h-5 w-5") => `<svg viewBox="0 0 24 24" class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] ?? ""}</svg>`;
@@ -829,7 +830,7 @@
       <aside class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-1 bg-[#2e2e30] px-3 py-4 text-white lg:flex">
         <div class="mb-3 flex items-center gap-2 px-2">${LOGO("h-7 w-7")}<span class="font-semibold">Cats Track</span></div>
         <button onclick="A.record()" class="mb-3 flex h-10 items-center gap-2 rounded-full border border-white/25 px-3 text-sm hover:bg-white/10"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs">+</span>Create note</button>
-        ${RailItem(Ic("home", "h-4 w-4"), "Today", view === "today", "A.go('today')", needs)}
+        ${RailItem(Ic("today", "h-4 w-4"), "Today", view === "today", "A.go('today')", needs)}
         ${RailItem(Ic("plan", "h-4 w-4"), "Plan", view === "plan", "A.go('plan')")}
         <button onclick="A.profile(true)" class="mt-auto flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-white/10" aria-label="Profile">${Avatar(m.id, m.name, 28)}<span class="truncate">${esc(m.name)}</span></button>
       </aside>
@@ -852,7 +853,7 @@
       </main>
 
       <nav class="fixed inset-x-0 bottom-0 z-20 grid h-[58px] grid-cols-3 items-center border-t border-line bg-white/95 pb-safe backdrop-blur lg:hidden">
-        ${BottomTab("home", "Today", view === "today", "A.go('today')", needs)}
+        ${BottomTab("today", "Today", view === "today", "A.go('today')", needs)}
         <div class="flex justify-center"><button onclick="A.record()" aria-label="Record" class="-mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md ring-4 ring-white active:scale-95 ${U.capture.listening ? "animate-pulse bg-bad" : "bg-accent"}">${Ic(U.capture.listening ? "stop" : "mic", "h-6 w-6")}</button></div>
         ${BottomTab("plan", "Plan", view === "plan", "A.go('plan')")}
       </nav>

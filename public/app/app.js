@@ -35,7 +35,7 @@
     view: "record", planTab: "timeline", moreOpen: false, profileOpen: false, openTask: null, toast: null,
     capture: { lang: "de-DE", text: "", attachments: [], draft: null, usedVoice: false, listening: false },
     demo: false, details: false, stepPick: null, attachMenu: null, contractPicker: null, preview: null, logModal: null,
-    open: {}, last: null, edit: null, collapsed: {}, editMsg: {}, reportMenu: false,
+    open: {}, last: null, edit: null, collapsed: {}, editMsg: {}, libPerson: null,
     logs: { q: "", filter: "all" }, scope: "all", site: { section: null },
     minutes: { open: false, text: "", res: null, keep: [] },
     email: { open: false, text: "" },
@@ -572,7 +572,7 @@
     // documents
     libFilter(f) { U.libFilter = f; render(); },
     libOpen(id) { U.libItem = id; render(); },
-    libNotice(id) { S.selectedNoticeId = id; U.planTab = "docs"; commit(); },
+    libNotice(id) { S.selectedNoticeId = id; U.view = "plan"; U.planTab = "docs"; commit(); window.scrollTo({ top: 0 }); },
     selectNotice(id) { S.selectedNoticeId = id; commit(); },
     openNotice(id) { S.selectedNoticeId = id; save(); A.go("plan", "docs"); },
     noticeBody(id, v) { S.notices = S.notices.map((n) => (n.id === id && n.status === "draft" ? { ...n, body: v } : n)); save(); },
@@ -584,11 +584,11 @@
       save(); toast("Approved ✓ · PDF in Plan › More › Documents");
     },
     dailyReport() {
-      addNotice(SF.draftTagesbericht({ day: S.today, tasks: S.tasks, sched: schedule(S.tasks), entries: S.entries, decisions: S.decisions, notices: S.notices }));
-      U.reportMenu = false;
-      save(); toast("Daily report drafted · approve above");
+      addNotice({ ...SF.draftTagesbericht({ day: S.today, tasks: S.tasks, sched: schedule(S.tasks), entries: S.entries, decisions: S.decisions, notices: S.notices }), day: S.today, by: S.persona });
+      save(); toast("Daily report drafted");
     },
-    reportMenu() { U.reportMenu = !U.reportMenu; render(); },
+    myReports() { U.libPerson = S.persona; U.libFilter = "all"; U.libItem = null; U.view = "plan"; U.planTab = "library"; U.moreOpen = false; render(); window.scrollTo({ top: 0 }); },
+    libPerson(id) { U.libPerson = id; render(); },
     exportTxt(id) {
       const n = S.notices.find((x) => x.id === id);
       const a = document.createElement("a");
@@ -604,7 +604,7 @@
     },
     async summarise() {
       const facts = summaryFacts();
-      U.ai = { text: "Summarising…", note: "" }; U.reportMenu = false; render();
+      U.ai = { text: "Summarising…", note: "" }; render();
       const ai = await api("/api/summary", { facts });
       U.ai = ai?.summary ? { text: ai.summary, note: `AI · ${ai.model ?? "open model"}` } : { text: facts, note: "built-in rules" };
       render();
@@ -933,12 +933,44 @@
       ${U.capture.draft ? RecordHero() : ""}
       ${SectionTitle(`Needs you <span class="font-normal text-faint">${items.length}</span>`)}
       ${items.length ? `<ul class="divide-y divide-soft overflow-hidden rounded-lg border border-line bg-white">${items.map(NeedCard).join("")}</ul>` : `<p class="rounded-lg border border-line bg-white px-4 py-5 text-center text-sm text-muted">All clear</p>`}
-      ${MyTasks()}
-      <div class="mt-5 flex flex-col items-center gap-2">
-        ${U.ai.text ? `<div class="w-full whitespace-pre-line rounded-lg border border-line bg-white p-3 text-sm">${esc(U.ai.text)}<p class="mt-1 text-[11px] text-violet-700">${esc(U.ai.note)}</p></div>` : ""}
-        ${U.reportMenu ? `<div class="grid w-full grid-cols-2 gap-2">${Btn("Summarise day", "A.summarise()")}${Btn("Daily report", "A.dailyReport()", "primary")}</div>` : ""}
-        <button onclick="A.reportMenu()" class="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted hover:bg-soft">${Ic("file", "h-4 w-4")}${U.reportMenu ? "Close" : "End-of-day report"}</button>
-      </div>`;
+      ${DailyReportCard()}
+      ${MyTasks()}`;
+  }
+
+  /** Today's daily report: status, what will go in, create / open, summarise, and the way to all my reports. */
+  const todaysReport = () => S.notices.find((n) => n.type === "tagesbericht" && (n.day ?? S.today) === S.today);
+  const myReportCount = () => S.entries.filter((e) => e.author === S.persona).length
+    + S.notices.filter((n) => (n.by ?? "site-manager") === S.persona).length + ARCHIVE.filter((a) => a.by === S.persona).length;
+  function DailyReportCard() {
+    const sched = schedule(S.tasks);
+    const rep = todaysReport();
+    const notes = S.entries.filter((e) => e.day === S.today);
+    const problems = notes.filter(isProblem).length;
+    const delayed = S.tasks.filter((t) => t.delayDays > 0 && t.status !== "done");
+    const maxDelay = Math.max(0, ...delayed.map((t) => t.delayDays));
+    const workers = S.tasks.filter((t) => t.status !== "done" && sched[t.id].es <= S.today && sched[t.id].ef >= S.today).reduce((n, t) => n + t.crew, 0);
+    const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const preview = [plural(notes.length, "note", "notes"), plural(problems, "problem", "problems"), plural(delayed.length, "delay", "delays"), plural(workers, "worker", "workers")].join(" · ");
+    const status = !rep ? Badge("Not started", "stone") : rep.status === "approved" ? Badge("Approved", "green") : Badge("Draft", "amber");
+    const day = dayShort(S.today);
+    return `
+      <section class="mt-6 rounded-lg border border-line border-l-4 border-l-accent bg-white p-4" data-daily-report>
+        <div class="flex items-start gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-dark">${Ic("book", "h-[18px] w-[18px]")}</span>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2"><h2 class="text-base font-semibold text-ink">Daily report</h2>${status}</div>
+            <p class="text-xs text-muted">${day.wd} ${dayLabel(S.today).split(" ").slice(1).join(" ")}</p>
+          </div>
+          ${maxDelay ? DelayChip(maxDelay) : ""}
+        </div>
+        <p class="mt-2 truncate text-[13px] text-muted">${preview}</p>
+        ${U.ai.text ? `<div class="mt-3 whitespace-pre-line rounded-md bg-canvas p-3 text-[13px] text-ink">${esc(U.ai.text)}${U.ai.note ? `<p class="mt-1 text-[11px] text-violet-700">${esc(U.ai.note)}</p>` : ""}</div>` : ""}
+        <button onclick="${rep ? `A.libNotice('${rep.id}')` : "A.dailyReport()"}" class="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-accent text-sm font-semibold text-white hover:bg-accent-dark">${Ic(rep ? "file" : "book", "h-4 w-4")}${rep ? "Open daily report" : "Create daily report"}</button>
+        <div class="mt-1 flex items-center justify-between">
+          <button onclick="A.summarise()" class="inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-[13px] font-medium text-muted hover:bg-soft">${Ic("pen", "h-4 w-4")}Summarise my day</button>
+          <button onclick="A.myReports()" class="inline-flex h-9 items-center gap-1 rounded-full px-2 text-[13px] font-medium text-accent-dark hover:bg-accent-tint">See all my reports (${myReportCount()})${Ic("chev", "h-4 w-4")}</button>
+        </div>
+      </section>`;
   }
 
   function RecordHero() {
@@ -1430,8 +1462,9 @@
     const ICON = { note: "mic", minutes: "minutes", letter: "file", report: "book" };
     const KIND = { note: "Site note", minutes: "Minutes", letter: "Letter", report: "Daily report" };
     const STATUS = { draft: '<span class="text-warn">Draft</span>', approved: '<span class="text-ok">Approved</span>', problem: '<span class="text-bad">Problem</span>', note: "" };
-    const people = PERSONAS.filter((p) => items.some((it) => it.by === p.id));
-    const others = items.filter((it) => !PERSONAS.some((p) => p.id === it.by));
+    const mine = U.libPerson;
+    const people = PERSONAS.filter((p) => items.some((it) => it.by === p.id) && (!mine || p.id === mine));
+    const others = mine ? [] : items.filter((it) => !PERSONAS.some((p) => p.id === it.by));
     const group = (id, name, role, list) => `
       <section class="mt-4">
         <div class="mb-1.5 flex items-center gap-2 px-0.5">${Avatar(id, name, 24)}<span class="text-[15px] font-semibold text-ink">${esc(name)}</span><span class="truncate text-xs text-muted">${esc(role)}</span><span class="ml-auto text-xs text-faint">${list.length}</span></div>
@@ -1444,10 +1477,11 @@
       </section>`;
     const open = ARCHIVE.find((a) => a.id === U.libItem);
     return `
+      ${mine ? `<div class="mb-2 flex items-center justify-between px-0.5"><h2 class="text-[15px] font-semibold text-ink">My reports</h2>${chipBtn("Show everyone", "A.libPerson(null)", false)}</div>` : ""}
       <div class="flex gap-1.5 overflow-x-auto">${[["all", "All"], ["notes", "Site notes"], ["letters", "Letters"], ["reports", "Daily reports"]].map(([k, l]) => chipBtn(l, `A.libFilter('${k}')`, f === k)).join("")}</div>
       ${people.map((p) => group(p.id, p.name, p.role.split(" (")[0], items.filter((it) => it.by === p.id))).join("")}
       ${others.length ? group("x", "Others", "", others) : ""}
-      ${items.length ? "" : `<p class="mt-4 rounded-lg border border-line bg-white px-4 py-6 text-center text-sm text-muted">Nothing here yet</p>`}
+      ${(mine ? items.some((it) => it.by === mine) : items.length) ? "" : `<p class="mt-4 rounded-lg border border-line bg-white px-4 py-6 text-center text-sm text-muted">Nothing here yet</p>`}
       ${open ? Modal(esc(open.title), `<p class="mb-2 text-xs text-muted">${esc(personaName(open.by))} · ${esc(open.day)}</p><p class="whitespace-pre-line rounded-md bg-canvas p-3 font-mono text-[13px] leading-relaxed text-ink">${esc(open.body)}</p>`, "A.libOpen(null)") : ""}`;
   }
 

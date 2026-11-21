@@ -613,6 +613,7 @@
       save(); toast(`${es.length} site note(s) saved`);
     },
 
+    week(d) { const cur = U.week ?? Math.floor(S.today / 5); U.week = Math.max(0, Math.min(1, cur + d)); render(); },
     siteSet(k) { U.site.section = k; render(); },
     siteSection(s) { U.site.section = U.site.section === s ? null : s; render(); },
 
@@ -1204,28 +1205,31 @@
   // ---- Timeline
   function Timeline() {
     const sched = schedule(S.tasks);
-    const N = 10, DAYS = Array.from({ length: N }, (_, k) => k);
+    const N = 5, wk = U.week ?? Math.floor(S.today / 5), w0 = wk * N, w1 = w0 + N - 1;
+    const DAYS = Array.from({ length: N }, (_, k) => w0 + k);
     const { own, related, link } = scopeTasks();
-    const pool = [...own, ...related];
+    const pool = [...own, ...related].filter((t) => sched[t.id].ef >= w0 && sched[t.id].es <= w1);
     const ms = scopeMilestones();
     const slips = milestoneSlips(S.tasks, sched).filter((x) => ms.some((m) => m.id === x.milestone.id));
-    const pct = (d) => (d / N) * 100;
-    const todayCol = `<span class="absolute inset-y-0 bg-accent/10" style="left:${pct(S.today)}%;width:${100 / N}%"></span>`;
-    const dayHead = `<div class="grid grid-cols-10 px-3 pb-2 pt-1 text-center">${DAYS.map((d) => {
+    const pct = (d) => ((d - w0) / N) * 100;
+    const todayCol = S.today < w0 || S.today > w1 ? "" : `<span class="absolute inset-y-0 bg-accent/10" style="left:${pct(S.today)}%;width:${100 / N}%"></span>`;
+    const dayHead = `<div class="grid grid-cols-5 px-3 pb-2 pt-1 text-center">${DAYS.map((d) => {
       const x = dayShort(d), on = d === S.today;
       return `<div class="flex flex-col items-center leading-tight"><span class="text-[10px] uppercase ${on ? "font-semibold text-accent-dark" : "text-faint"}">${x.wd.slice(0, 2)}</span><span class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs ${on ? "bg-accent font-semibold text-white" : "text-ink"}">${x.date.split(".")[0]}</span></div>`;
     }).join("")}</div>`;
     const row = (t, team) => {
       const sc = sched[t.id], od = isOverdue(t), lk = link[t.id], miss = missingCount(t);
       const len = sc.ef - sc.es + 1, base = Math.min(len, t.duration), delay = Math.max(0, len - base);
+      const vs = Math.max(sc.es, w0), ve = Math.min(sc.ef, w1), be = sc.es + base - 1, vlen = ve - vs + 1;
+      const vBase = Math.max(0, Math.min(ve, be) - vs + 1), vDelay = Math.max(0, ve - Math.max(vs, be + 1) + 1);
       const edge = t.status === "blocked" ? "outline outline-2 outline-ink" : od ? "outline outline-2 outline-bad" : "";
       const meta = [od ? '<span class="text-bad">Overdue</span>' : "", t.status === "blocked" ? '<span class="text-ink">Blocked</span>' : "", miss ? `<span class="text-warn">${miss} missing</span>` : "", delay ? `<span class="text-warn">+${delay} d</span>` : "", `${t.crew} crew`].filter(Boolean).join(" · ");
       return `<button onclick="A.openTask('${t.id}')" class="block w-full px-3 py-2 text-left hover:bg-canvas ${lk ? "opacity-50" : ""}" title="${lk ? esc(lk) : ""}">
         <div class="flex items-baseline gap-2"><span class="min-w-0 flex-1 truncate text-[13px] font-medium ${t.status === "done" ? "text-faint line-through" : "text-ink"}">${esc(t.name)} ${esc(t.section)}${t.milestone ? ' <span class="text-warn">◆</span>' : ""}</span><span class="shrink-0 text-[11px] text-muted">${meta}</span></div>
         <div class="relative mt-1.5 h-2.5 rounded-full bg-soft">${todayCol}
-          <span class="absolute inset-y-0 flex overflow-hidden rounded-full ${edge} ${t.status === "done" ? "opacity-40" : ""}" style="left:${pct(sc.es)}%;width:${(len / N) * 100}%">
-            <span class="h-full" style="width:${(base / len) * 100}%;background:${team.color}"></span>
-            ${delay ? `<span class="h-full flex-1" style="background:repeating-linear-gradient(45deg,#f59e0b,#f59e0b 3px,#fde68a 3px,#fde68a 6px)"></span>` : ""}
+          <span class="absolute inset-y-0 flex overflow-hidden rounded-full ${edge} ${t.status === "done" ? "opacity-40" : ""}" style="left:${pct(vs)}%;width:${(vlen / N) * 100}%">
+            <span class="h-full" style="width:${(vBase / vlen) * 100}%;background:${team.color}"></span>
+            ${vDelay ? `<span class="h-full flex-1" style="background:repeating-linear-gradient(45deg,#f59e0b,#f59e0b 3px,#fde68a 3px,#fde68a 6px)"></span>` : ""}
           </span>
         </div>
       </button>`;
@@ -1233,6 +1237,11 @@
     return `${ScopeBar()}
     ${slips.length ? `<div class="mb-2 flex gap-1.5 overflow-x-auto">${slips.map((x) => `<span class="flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ${x.slip ? "bg-bad-soft text-bad" : "bg-ok-soft text-ok"}">◆ ${esc(x.milestone.name.replace(/ complete$/, ""))} · ${x.slip ? `+${x.slip} d` : "on track"} · ${dayShort(x.milestone.targetDay).wd}</span>`).join("")}</div>` : ""}
     <section class="overflow-hidden rounded-lg border border-line bg-white">
+      <div class="flex items-center justify-between px-2 pt-2">
+        <button onclick="A.week(-1)" ${wk === 0 ? "disabled" : ""} aria-label="Previous week" class="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-soft disabled:opacity-30"><span class="rotate-180">${Ic("chev", "h-5 w-5")}</span></button>
+        <div class="text-center"><p class="text-sm font-semibold text-ink">${wk === Math.floor(S.today / 5) ? "This week" : wk > Math.floor(S.today / 5) ? "Next week" : "Last week"}</p><p class="text-xs text-muted">${dayLabel(w0)} – ${dayLabel(w1)}</p></div>
+        <button onclick="A.week(1)" ${wk === 1 ? "disabled" : ""} aria-label="Next week" class="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-soft disabled:opacity-30">${Ic("chev", "h-5 w-5")}</button>
+      </div>
       <div class="border-b border-soft bg-white">${dayHead}</div>
       ${TEAMS.filter((team) => pool.some((t) => t.team === team.id)).map((team) => {
         const list = pool.filter((t) => t.team === team.id).sort((a, b) => sched[a.id].es - sched[b.id].es);

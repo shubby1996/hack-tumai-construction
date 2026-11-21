@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cats Track · AI site assistant</title>
+<meta name="description" content="Speak on site, the app sorts it, the right person gets the job. Cats Track turns site voice notes into to-dos, re-plans, updates and VOB/B letters.">
+<meta name="theme-color" content="#1e1f21">
+<link rel="icon" href="../icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  /* Cats Track tokens: the same colours as the app (public/app/index.html) */
+  :root {
+    --ink: #1e1f21; --muted: #6d6e6f; --faint: #9ca0a4; --line: #e0e0e0; --soft: #f1f1f1; --canvas: #f9f8f8;
+    --accent: #f06a6a; --accent-dark: #e8384f; --accent-soft: #fde3e3; --accent-tint: #fff5f5;
+    --ok: #15803d; --ok-soft: #dcfce7; --bad: #b91c1c; --bad-soft: #fee2e2; --warn: #a16207; --warn-soft: #fef3c7;
+    --night: #141416;
+    --pixel: "Press Start 2P", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--canvas); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  img.px { image-rendering: pixelated; }
+  .wrap { width: min(1180px, 100% - 32px); margin: 0 auto; }
+
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 24px; border-radius: 999px; font-weight: 600; font-size: 16px; transition: transform .15s, background .15s, box-shadow .15s; }
+  .btn:active { transform: scale(.98); }
+  .btn-accent { background: var(--accent); color: #fff; box-shadow: 0 10px 24px rgba(240,106,106,.35); }
+  .btn-accent:hover { background: var(--accent-dark); }
+  .btn-dark { background: var(--ink); color: #fff; }
+  .btn-dark:hover { background: #000; }
+  .btn-line { border: 1.5px solid var(--line); background: #fff; }
+  .btn-line:hover { border-color: var(--ink); }
+  .btn svg { width: 20px; height: 20px; }
+
+  /* nav */
+  nav.top { position: sticky; top: 0; z-index: 20; background: rgba(249,248,248,.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  nav.top .wrap { display: flex; align-items: center; gap: 20px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+  .brand img { width: 32px; height: 32px; border-radius: 9px; }
+  nav.top .links { display: flex; gap: 22px; margin-left: auto; font-size: 15px; color: var(--muted); }
+  nav.top .links a:hover { color: var(--ink); }
+  nav.top .btn { min-height: 40px; padding: 0 18px; font-size: 14px; }
+
+  /* hero */
+  .hero { position: relative; overflow: hidden; padding: 72px 0 40px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
+  .hero .wrap > div:first-child { position: relative; z-index: 5; min-width: 0; }
+  .stage { min-width: 0; }
+  .kicker { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .kicker b { font-family: var(--pixel); font-size: 9px; color: var(--accent); letter-spacing: .05em; }
+  h1 { margin-top: 22px; font-size: clamp(38px, 5vw, 62px); line-height: 1.02; letter-spacing: -.035em; font-weight: 800; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { margin-top: 20px; max-width: 540px; font-size: 19px; line-height: 1.55; color: var(--muted); }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+  .flow span { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 14px; font-weight: 600; }
+  .flow i { font-style: normal; color: var(--faint); }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .stage { position: relative; height: 560px; }
+  .stage .iso { position: absolute; right: -260px; top: 70px; width: 760px; opacity: .95; filter: saturate(1.05); }
+  .stage .crane { position: absolute; left: -10px; bottom: 40px; width: 230px; }
+  .stage .boss { position: absolute; left: 150px; bottom: 6px; height: 150px; animation: bob 2.4s ease-in-out infinite; }
+  .stage .shovel { position: absolute; right: 30px; bottom: 0; height: 120px; animation: bob 1.8s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-5px); } }
+
+  /* phone with the real app */
+  .phone { position: relative; width: 300px; height: 620px; padding: 12px; border-radius: 48px; background: #0d0d0f; box-shadow: 0 40px 80px rgba(20,20,22,.35), inset 0 0 0 2px #2a2c31; }
+  .phone::before { content: ""; position: absolute; top: 20px; left: 50%; width: 90px; height: 24px; margin-left: -45px; border-radius: 999px; background: #0d0d0f; z-index: 2; }
+  .phone iframe, .phone .shot { display: block; width: 100%; height: 100%; border: 0; border-radius: 38px; background: var(--canvas); }
+  .stage .phone { position: absolute; left: 50%; top: 0; margin-left: -150px; z-index: 3; }
+  .bubble { position: absolute; z-index: 4; padding: 12px 14px; border-radius: 16px; background: #fff; border: 1px solid var(--line); box-shadow: 0 16px 34px rgba(20,20,22,.12); font-size: 13px; line-height: 1.35; max-width: 230px; }
+  .bubble b { display: block; font-size: 13px; margin-bottom: 2px; }
+  .bubble small { color: var(--muted); }
+  .bubble.b1 { left: -40px; top: 400px; border-left: 4px solid var(--bad); }
+  .bubble.b2 { right: -40px; top: 90px; }
+  .bubble.b2 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .chip { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--soft); }
+  .chip.ai { background: #f5f3ff; color: #6d28d9; }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+
+  /* stats strip */
+  .strip { border-block: 1px solid var(--line); background: #fff; }
+  .strip .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .strip div { padding: 26px 18px; border-left: 1px solid var(--line); }
+  .strip div:first-child { border-left: 0; }
+  .strip b { display: block; font-size: 34px; font-weight: 800; letter-spacing: -.02em; }
+  .strip b em { font-style: normal; color: var(--accent); }
+  .strip span { font-size: 14px; color: var(--muted); }
+
+  section.block { padding: 96px 0; }
+  .eyebrow { font-family: var(--pixel); font-size: 11px; color: var(--accent); letter-spacing: .06em; }
+  h2 { margin-top: 14px; font-size: clamp(32px, 4vw, 48px); line-height: 1.08; letter-spacing: -.03em; font-weight: 800; }
+  h2 span { color: var(--faint); }
+  .sub { margin-top: 14px; max-width: 640px; font-size: 18px; line-height: 1.55; color: var(--muted); }
+
+  /* how it works */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; }
+  .step { position: relative; overflow: hidden; padding: 28px; border-radius: 24px; background: #fff; border: 1px solid var(--line); min-height: 320px; display: flex; flex-direction: column; }
+  .step .n { font-family: var(--pixel); font-size: 10px; color: var(--faint); }
+  .step h3 { margin-top: 14px; font-size: 24px; letter-spacing: -.02em; }
+  .step p { margin-top: 10px; font-size: 15px; line-height: 1.55; color: var(--muted); }
+  .step .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 18px; }
+  .step img.px { position: absolute; right: 16px; top: 18px; height: 70px; opacity: .9; }
+  .step.dark { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .step.dark p { color: rgba(255,255,255,.7); }
+  .step.dark .chip { background: rgba(255,255,255,.1); color: #fff; }
+  .mini { margin-top: 16px; padding: 12px; border-radius: 14px; background: var(--canvas); border: 1px solid var(--line); font-size: 13px; }
+  .step.dark .mini { background: #2a2b2e; border-color: #3a3b3f; }
+  .mini .row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .mini .row + .row { border-top: 1px solid var(--line); }
+  .step.dark .mini .row + .row { border-color: #3a3b3f; }
+  .mini .ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; background: var(--soft); flex: none; }
+  .mini .ic.bad { background: var(--bad-soft); }
+  .mini .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini .go { padding: 2px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; }
+  .mini .go.ok { background: var(--ok); }
+
+  /* demo: the big button section */
+  .panel { position: relative; overflow: hidden; border-radius: 28px; padding: 40px; min-height: 520px; display: flex; flex-direction: column; }
+  .panel h2 { font-size: clamp(30px, 3.4vw, 40px); }
+  .panel .sub { font-size: 17px; }
+  .panel .cta { margin-top: auto; padding-top: 30px; }
+  .panel.demo { background: var(--accent-tint); border: 1px solid var(--accent-soft); }
+  .panel.demo ol { margin-top: 24px; list-style: none; counter-reset: s; display: grid; gap: 10px; max-width: 360px; position: relative; z-index: 2; }
+  .panel.demo li { counter-increment: s; position: relative; padding-left: 36px; font-size: 15px; line-height: 1.5; }
+  .panel.demo li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; }
+  .panel.demo .art { position: absolute; right: 28px; top: 34px; display: flex; align-items: flex-end; gap: 6px; pointer-events: none; }
+  .panel.demo .art img { height: 72px; }
+  .panel.demo .art img.big { height: 96px; }
+  .btn-white { background: #fff; color: var(--ink); }
+  .btn-ghostw { border: 1.5px solid rgba(255,255,255,.3); color: #fff; }
+
+  /* features */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 40px; }
+  .feat { padding: 24px; border-radius: 20px; background: #fff; border: 1px solid var(--line); }
+  .feat .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: var(--accent-tint); }
+  .feat h4 { margin-top: 14px; font-size: 17px; }
+  .feat p { margin-top: 6px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+
+  /* site band (pixel art) */
+  .band { position: relative; overflow: hidden; background: #1b1c1f url(art/map_site.jpg) center 40% / cover; image-rendering: pixelated; }
+  .band::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20,20,22,.92) 0%, rgba(20,20,22,.75) 45%, rgba(20,20,22,.15) 100%); }
+  .band .wrap { position: relative; padding: 90px 0; color: #fff; }
+  .band h2 span { color: rgba(255,255,255,.5); }
+  .band .sub { color: rgba(255,255,255,.7); }
+  .band .cta { margin-top: 28px; }
+
+  footer { padding: 40px 0 56px; font-size: 14px; color: var(--muted); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center; }
+  footer .brand { font-size: 16px; color: var(--ink); }
+  footer .sp { margin-left: auto; display: flex; gap: 20px; flex-wrap: wrap; }
+  footer a:hover { color: var(--ink); }
+
+  /* reveal on scroll */
+  .rv { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+  .rv.in { opacity: 1; transform: none; }
+
+  @media (max-width: 980px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .stage { height: 520px; }
+    .stage .iso { right: -260px; }
+    .steps, .features { grid-template-columns: 1fr; }
+    .strip .wrap { grid-template-columns: repeat(2, 1fr); }
+    .strip div:nth-child(3) { border-left: 0; }
+    .strip div:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .panel.demo .art { display: none; }
+    nav.top .links { display: none; }
+    nav.top .btn { margin-left: auto; }
+  }
+  @media (max-width: 560px) {
+    .hero { padding-top: 40px; }
+    .bubble { display: none; }
+    .stage .crane { width: 150px; }
+    .stage .boss { left: 60px; height: 110px; }
+    .panel { padding: 26px; min-height: 0; }
+    .cta .btn { width: 100%; }
+    section.block { padding: 64px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="../icon.svg" alt="">Cats Track</a>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#demo">Live demo</a>
+      <a href="../platform.html">Platform</a>
+    </div>
+    <a class="btn btn-accent" href="/">Open the app</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <span class="kicker"><b>TUM.AI</b>Construction Hack · Challenge B</span>
+      <h1>Speak on site.<br><em>The right person</em> gets the job.</h1>
+      <p class="lead">Cats Track is an AI site assistant. A foreman says what happened; the app sorts it into one card, re-plans the shared two-week plan and drafts the VOB/B letter. The site manager approves with one tap.</p>
+      <div class="flow"><span>🎙 Speak</span><i>→</i><span>✨ It sorts itself</span><i>→</i><span>✅ Right person, right job</span></div>
+      <div class="cta">
+        <a class="btn btn-accent" href="/">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Try the live demo</a>
+        <a class="btn btn-line" href="../platform.html">How it's built</a>
+      </div>
+    </div>
+    <div class="stage" aria-hidden="true">
+      <img class="px iso" src="art/map_site_cut.png" alt="">
+      <img class="px crane" src="art/tower_crane.png" alt="">
+      <img class="px boss" src="art/site_manager.png" alt="">
+      <img class="px shovel" src="art/worker_shovel.png" alt="">
+      <div class="phone"><iframe class="live" data-src="/app/index.html" title="Cats Track live app" tabindex="-1"></iframe></div>
+      <div class="bubble b1"><b>🔴 Stoppage · Excavation foundation C</b><small>since 10:00 · utility plan missing (client)</small></div>
+      <div class="bubble b2"><b>Needs you</b><small>Re-plan · Excavation foundation C</small>
+        <div class="chips"><span class="chip warn">Delay +1 d</span><span class="chip ok">◆ milestones hold</span><span class="chip">👷 −72 h idle</span></div></div>
+    </div>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="wrap">
+    <div><b>1 <em>tap</em></b><span>to record a site note, in German or English</span></div>
+    <div><b>1 <em>card</em></b><span>instead of a 15-field form</span></div>
+    <div><b>≈ 72 <em>h</em></b><span>idle crew-hours avoided in the demo re-plan</span></div>
+    <div><b>§ 6 <em>VOB/B</em></b><span>obstruction notice drafted from the note</span></div>
+  </div>
+</div>
+
+<section class="block" id="how">
+  <div class="wrap">
+    <div class="rv">
+      <span class="eyebrow">HOW IT WORKS</span>
+      <h2>Speak, sort, act. <span>Three areas, no forms.</span></h2>
+      <p class="sub">The app has three places: <b>Today</b>, the big <b>Record</b> button and the <b>Plan</b>. Everything that waits for you lands in one list.</p>
+    </div>
+    <div class="steps">
+      <div class="step rv">
+        <img class="px" src="art/worker_point.png" alt="">
+        <span class="n">01 · SPEAK</span>
+        <h3>Record on site</h3>
+        <p>Tap the mic, say what happened, stop. Or attach a photo, PDF, contract, meeting minutes or a pasted email.</p>
+        <div class="mini"><i>„Bagger steht seit 10 Uhr in Abschnitt C, der Leitungsplan vom Bauherrn fehlt.“</i></div>
+        <div class="tags"><span class="chip">Voice DE / EN</span><span class="chip">Photo</span><span class="chip">PDF</span><span class="chip">Contract</span><span class="chip">Email</span></div>
+      </div>
+      <div class="step dark rv">
+        <img class="px" src="art/engineer.png" alt="">
+        <span class="n">02 · SORT</span>
+        <h3>One card, not a form</h3>
+        <p>Open-source AI fills in what, where, since when and why, plus the next steps with who and when. At most one question.</p>
+        <div class="mini">
+          <div class="row"><span class="t">→ Contact Dr. Roth, today</span><span class="chip ai">AI</span></div>
+          <div class="row"><span class="t">→ To-do for Max B., today</span><span class="chip ai">AI</span></div>
+          <div class="row"><span class="t">❓ How long? <b>1 day</b> · 2 days · 3 days</span></div>
+        </div>
+        <div class="tags"><span class="chip">Qwen / Llama</span><span class="chip">Claude optional</span><span class="chip">Rules fallback</span></div>
+      </div>
+      <div class="step rv">
+        <img class="px" src="art/site_manager.png" alt="">
+        <span class="n">03 · ACT</span>
+        <h3>Needs you</h3>
+        <p>Re-plans, plan changes, VOB/B letters, updates to send and coming-up risks, in one list. One tap each.</p>
+        <div class="mini">
+          <div class="row"><span class="ic bad">⚡</span><span class="t">Re-plan · Excavation foundation C</span><span class="go ok">Approve</span></div>
+          <div class="row"><span class="ic bad">✍</span><span class="t">Letter · Behinderungsanzeige</span><span class="go">Draft</span></div>
+          <div class="row"><span class="ic">✉</span><span class="t">Send update · Dr. Sabine Roth</span><span class="go">Send</span></div>
+        </div>
+        <div class="tags"><span class="chip">Re-plan</span><span class="chip">VOB/B</span><span class="chip">WhatsApp · SMS · email</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="padding-top:0">
+  <div class="wrap">
+    <div class="panel demo rv" id="demo">
+      <span class="eyebrow">LIVE DEMO</span>
+      <h2>Try it yourself.</h2>
+      <p class="sub" style="max-width:360px">The real app with a synthetic site: Wohnanlage Lindenhof, Haus 2, five companies, 14 tasks.</p>
+      <ol>
+        <li>Tap the mic, turn on <b>Demo phrases</b>, pick <i>Excavator idle</i>.</li>
+        <li>Answer <b>How long? → 1 day</b> and save.</li>
+        <li>On <b>Today</b>, approve the re-plan and draft the letter.</li>
+        <li>Switch person from the avatar to see what a foreman sees.</li>
+      </ol>
+      <div class="cta">
+        <a class="btn btn-accent" href="/"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Open the live demo</a>
+        <a class="btn btn-line" href="../platform.html">How it's built</a>
+      </div>
+      <div class="art" aria-hidden="true"><img class="px big" src="art/mini_excavator.png" alt=""><img class="px" src="art/worker_stand.png" alt=""><img class="px" src="art/cone.png" alt="" style="height:40px"></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="padding-top:0">
+  <div class="wrap">
+    <div class="rv">
+      <span class="eyebrow">WHAT'S INSIDE</span>
+      <h2>Built for a phone in one hand. <span>On a construction site.</span></h2>
+    </div>
+    <div class="features">
+      <div class="feat rv"><div class="ico">🎙</div><h4>Voice first</h4><p>German or English dictation; sorting starts by itself when you stop talking. Photos are described by an open vision model.</p></div>
+      <div class="feat rv"><div class="ico">⚡</div><h4>Re-plan in seconds</h4><p>A stoppage shows its knock-on effect and a proposal: add a crew, pull ready work forward. Milestones hold, idle hours drop.</p></div>
+      <div class="feat rv"><div class="ico">§</div><h4>VOB/B letters</h4><p>Behinderungsanzeige, Mängelanzeige, Mehrkosten- and Bedenkenanzeige, daily report. Filled only from what was recorded.</p></div>
+      <div class="feat rv"><div class="ico">✉</div><h4>Updates for people without the app</h4><p>Personal WhatsApp, SMS or email drafts: action for whoever has to act, FYI for whoever is only affected.</p></div>
+      <div class="feat rv"><div class="ico">🗺</div><h4>Plan and site view</h4><p>A shared two-week timeline and a site plan by section and level, with pins for problems, blocked and overdue work.</p></div>
+      <div class="feat rv"><div class="ico">👷</div><h4>A view per role</h4><p>The site manager sees everything. Each foreman sees their own tasks plus the ones that depend on them.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap rv">
+    <span class="eyebrow">TRY IT NOW</span>
+    <h2>Clear blockers before they bite. <span>Starting with one voice note.</span></h2>
+    <p class="sub">Prototype with synthetic data. Drafts are a drafting aid, not legal advice.</p>
+    <div class="cta">
+      <a class="btn btn-accent" href="/">Open the live demo</a>
+      <a class="btn btn-ghostw" href="../platform.html">How it's built</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="../icon.svg" alt="" style="width:26px;height:26px;border-radius:7px">Cats Track</a>
+    <span>Tum.ai Construction Hack 2026 · Challenge B</span>
+    <div class="sp">
+      <a href="/">Live demo</a>
+      <a href="../platform.html">Platform</a>
+      <a href="/classic">Classic UI</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Load the live app into the phone frames only when they come into view (keeps the first paint fast).
+  // Served from file:// there is no app server, so the frames show the site art instead.
+  const served = location.protocol.startsWith("http");
+  const io = new IntersectionObserver((items) => items.forEach((it) => {
+    if (!it.isIntersecting) return;
+    const f = it.target;
+    if (served && !f.src) f.src = f.dataset.src;
+    if (f.classList.contains("rv")) f.classList.add("in");
+    io.unobserve(f);
+  }), { rootMargin: "200px" });
+  document.querySelectorAll("iframe.live").forEach((f) => {
+    if (!served) f.replaceWith(Object.assign(document.createElement("div"), { className: "shot", style: "background:#f9f8f8 url(art/title_site.jpg) center/cover" }));
+    else io.observe(f);
+  });
+  document.querySelectorAll(".rv").forEach((e) => io.observe(e));
+  // Never leave content hidden: reveal everything shortly after load even if the observer did not fire.
+  setTimeout(() => document.querySelectorAll(".rv").forEach((e) => e.classList.add("in")), 1200);
+</script>
+</body>
+</html>

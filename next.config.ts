@@ -6,7 +6,11 @@ const nextConfig: NextConfig = {
     return { beforeFiles: [{ source: "/", destination: "/app/index.html" }], afterFiles: [], fallback: [] };
   },
   async redirects() {
-    return [{ source: "/mock/:path*", destination: "/", permanent: false }];
+    return [
+      { source: "/mock/:path*", destination: "/", permanent: false },
+      // Static pages in public/ that use relative asset paths: send the short URL to the real file.
+      { source: "/landing", destination: "/landing/index.html", permanent: false },
+    ];
   },
   cacheComponents: true,
   partialPrefetching: true,

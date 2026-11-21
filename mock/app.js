@@ -38,6 +38,7 @@
     open: {}, last: null, edit: null, collapsed: {}, editMsg: {}, reportMenu: false,
     logs: { q: "", filter: "all" }, scope: "all", site: { section: null },
     minutes: { open: false, text: "", res: null, keep: [] },
+    email: { open: false, text: "" },
     setupPreview: null, editContact: null, ai: {}, drag: null,
   };
 
@@ -122,13 +123,35 @@
   }
 
   // ---- UI kit (same building blocks as src/components/ui.tsx)
+  const ICONS = {
+    mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+    clip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+    home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    plan: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+    pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+    send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    cal: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    photo: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
+    contract: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+    minutes: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
+    mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>',
+  };
+  const Ic = (name, cls = "h-5 w-5") => `<svg viewBox="0 0 24 24" class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] ?? ""}</svg>`;
+  const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u2190-\u21FF\u2300-\u23FF\u2460-\u27BF\u2B00-\u2BFF\uFE0F\u25A0-\u25FF]/gu;
+  const plain = (html) => String(html).replace(/<span title="[^"]*" class="inline-flex shrink-0[^>]*>[^<]*<\/span>/g, "").replace(/<[^>]+>/g, "").replace(EMOJI_RE, "").replace(/\s+/g, " ").trim();
   const TONES = {
     stone: "bg-soft text-ink", amber: "bg-warn-soft text-warn", red: "bg-bad-soft text-bad", green: "bg-ok-soft text-ok",
     blue: "bg-sel-soft text-sel", violet: "bg-violet-100 text-violet-800", accent: "bg-accent-soft text-accent-dark",
     overdue: "bg-bad text-white", blocked: "bg-ink text-white", outline: "border border-line bg-white text-ink",
   };
-  const Badge = (text, tone = "stone", extra = "") => `<span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${TONES[tone]}" ${extra}>${text}</span>`;
-  const OverdueChip = () => Badge("⏰ Overdue", "overdue");
+  const Badge = (text, tone = "stone", extra = "") => `<span class="inline-flex items-center gap-1 whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ${TONES[tone]}" ${extra}>${text}</span>`;
+  const OverdueChip = () => Badge("Overdue", "overdue");
   const DelayChip = (n) => Badge(`Delay +${n} d`, "amber");
   const VARIANTS = {
     primary: "bg-accent text-white hover:bg-accent-dark disabled:bg-accent-soft disabled:text-accent",
@@ -137,17 +160,17 @@
     success: "bg-ok text-white hover:brightness-110 disabled:opacity-40",
   };
   const Btn = (label, onclick, variant = "secondary", extra = "", cls = "") =>
-    `<button onclick="${onclick}" ${extra} class="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed ${VARIANTS[variant]} ${cls}">${label}</button>`;
+    `<button onclick="${onclick}" ${extra} class="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-md px-3.5 text-sm font-medium transition active:scale-[0.98] disabled:cursor-not-allowed ${VARIANTS[variant]} ${cls}">${label}</button>`;
   const Card = (title, body, right = "", cls = "") => `
     <section class="rounded-lg border border-line bg-white ${cls}">
       ${title || right ? `<header class="flex flex-wrap items-center justify-between gap-2 px-4 pt-4"><h2 class="text-base font-bold text-ink">${title}</h2>${right}</header>` : ""}
       <div class="p-4">${body}</div>
     </section>`;
   const Field = (label, inner) => `<label class="block text-xs font-semibold text-muted">${label}<div class="mt-1 text-sm text-ink">${inner}</div></label>`;
-  const inputCls = "w-full min-h-11 rounded-xl border border-line bg-white px-3 py-2 text-base text-ink focus:border-sel focus:outline-none";
+  const inputCls = "w-full min-h-10 rounded-md border border-line bg-white px-3 py-2 text-base text-ink focus:border-sel focus:outline-none";
   const chipBtn = (label, onclick, active, extra = "") =>
-    `<button onclick="${onclick}" ${extra} class="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold ${active ? "bg-ink text-white" : "border border-line bg-white text-ink"}">${label}</button>`;
-  const SectionTitle = (text, right = "") => `<div class="mb-2 mt-5 flex items-center justify-between"><h2 class="text-base font-semibold text-ink">${text}</h2>${right}</div>`;
+    `<button onclick="${onclick}" ${extra} class="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium ${active ? "border-sel bg-sel-soft text-sel" : "border-line bg-white text-muted"}">${label}</button>`;
+  const SectionTitle = (text, right = "") => `<div class="mb-1.5 mt-6 flex items-center justify-between px-0.5"><h2 class="text-[15px] font-semibold text-ink">${text}</h2>${right}</div>`;
   const AVATAR_COLORS = { "site-manager": "#f06a6a", earthworks: "#b45309", formwork: "#2563eb", rebar: "#7c3aed", concrete: "#0f766e", client: "#52525b", supplier: "#52525b" };
   const Avatar = (id, name, size = 24) => {
     const initials = String(name).split(" ").filter((w) => w !== "Dr.").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -155,7 +178,7 @@
   };
   const CheckCircle = (done, onclick, disabled) => `
     <button type="button" onclick="event.stopPropagation();${onclick}" ${disabled ? "disabled" : ""} title="${done ? "Mark incomplete" : "Mark complete"}" class="-m-2.5 flex h-11 w-11 shrink-0 items-center justify-center disabled:cursor-default disabled:opacity-40">
-      <span class="flex h-6 w-6 items-center justify-center rounded-full border ${done ? "border-ok bg-ok text-white" : "border-faint text-transparent hover:border-ok hover:text-ok"}">
+      <span class="flex h-5 w-5 items-center justify-center rounded-full border ${done ? "border-ok bg-ok text-white" : "border-faint text-transparent hover:border-ok hover:text-ok"}">
         <svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 8.5l3 3 7-7"/></svg>
       </span>
     </button>`;
@@ -164,9 +187,9 @@
   const StatusChips = (t, showPlanned = true) => {
     const out = [];
     if (isOverdue(t)) out.push(OverdueChip());
-    if (t.status === "blocked") out.push(Badge("⛔ Blocked", "blocked"));
-    else if (t.status === "in-progress") out.push(Badge("▶ Active", "blue"));
-    else if (t.status === "done") out.push(Badge("✓ Done", "green"));
+    if (t.status === "blocked") out.push(Badge("Blocked", "blocked"));
+    else if (t.status === "in-progress") out.push(Badge("In progress", "blue"));
+    else if (t.status === "done") out.push(Badge("Done", "green"));
     else if (showPlanned && !out.length) out.push(Badge("Planned"));
     if (t.delayDays > 0) out.push(DelayChip(t.delayDays));
     return out.join("");
@@ -174,15 +197,15 @@
   const MissingChip = (t) => (missingCount(t) ? Badge(`⚠ ${missingCount(t)} missing`, "outline") : "");
   const Modal = (title, body, onclose) => `
     <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onclick="if(event.target===this)${onclose}">
-      <div class="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 pb-safe sm:max-w-lg sm:rounded-xl">
-        <div class="mb-3 flex items-center gap-2"><h3 class="flex-1 text-lg font-bold text-ink">${title}</h3>${Btn("✕", onclose, "ghost", 'aria-label="Close"')}</div>
+      <div class="max-h-[90vh] w-full overflow-y-auto rounded-t-xl bg-white p-4 pb-safe sm:max-w-lg sm:rounded-xl">
+        <div class="mb-3 flex items-center gap-2"><h3 class="flex-1 text-base font-semibold text-ink">${title}</h3>${Btn("✕", onclose, "ghost", 'aria-label="Close"')}</div>
         ${body}
       </div>
     </div>`;
   const ATT_ICON = { photo: "📷", pdf: "📄", contract: "📑" };
   const attUrl = (a) => a.url || sessionUrls[a.id];
   const AttachChip = (a, previewCall, removeCall) => `
-    <span class="inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border border-line bg-white pl-1 pr-1">
+    <span class="inline-flex min-h-10 max-w-full items-center gap-2 rounded-md border border-line bg-white pl-1 pr-1">
       <button onclick="event.stopPropagation();${previewCall}" class="flex min-w-0 items-center gap-2 py-1">
         ${a.kind === "photo" && attUrl(a) ? `<img src="${attUrl(a)}" alt="" class="h-9 w-9 rounded-lg object-cover">` : `<span class="flex h-9 w-9 items-center justify-center rounded-lg bg-canvas text-lg">${ATT_ICON[a.kind]}</span>`}
         <span class="max-w-[9rem] truncate text-xs font-semibold text-ink">${esc(a.name)}</span>
@@ -551,6 +574,13 @@
     logSearch(v) { U.logs.q = v; renderLater("log-search"); },
     openLog(id) { U.logModal = id; render(); },
     closeLog() { U.logModal = null; render(); },
+    fromMinutes() { U.attachMenu = null; U.view = "plan"; U.planTab = "notes"; U.minutes = { open: true, text: "", res: null, keep: [] }; render(); },
+    emailOpen(o) { U.attachMenu = null; U.email = { open: o, text: o ? U.email.text : "" }; render(); },
+    emailSample() { U.email.text = SAMPLE_EMAIL; render(); },
+    emailSort() {
+      const t = U.email.text.trim(); if (!t) return;
+      U.email = { open: false, text: "" }; U.view = "record"; U.capture.text = t; A.structure(true);
+    },
     minutesOpen(o) { U.minutes = { open: o, text: "", res: null, keep: [] }; render(); },
     minutesSample() { U.minutes.text = SAMPLE_MINUTES; render(); },
     minutesSplit() {
@@ -732,22 +762,28 @@
   }
 
   const TONE_EDGE = { bad: "border-l-bad", warn: "border-l-warn", neutral: "border-l-line", ok: "border-l-ok" };
+  const NEED_ICON = { "⚡": "zap", "📅": "cal", "✍": "pen", "📄": "file", "✉": "send", "⏳": "clock", "⏰": "clock", "✔︎": "check", "✏️": "pen", "🔔": "bell" };
+  const NEED_TINT = { bad: "bg-bad-soft text-bad", warn: "bg-warn-soft text-warn", ok: "bg-ok-soft text-ok", neutral: "bg-soft text-muted" };
+  const ACT = { primary: "bg-accent text-white", success: "bg-ok text-white", secondary: "border border-line bg-white text-ink" };
   function NeedCard(it) {
     const open = U.open[it.key];
-    const hasMore = (it.more && it.more.length) || it.detail || it.chips.length > 2;
-    const chips = [it.overdue ? OverdueChip() : "", ...it.chips].filter(Boolean);
+    const meta = [it.overdue ? '<span class="font-medium text-bad">Overdue</span>' : "", ...it.chips.map((c) => {
+      const t = esc(plain(c)); if (!t) return "";
+      return /text-bad|bg-bad/.test(c) ? `<span class="text-bad">${t}</span>` : /text-warn/.test(c) ? `<span class="text-warn">${t}</span>` : t;
+    })].filter(Boolean);
+    const shown = open ? meta : meta.slice(0, 3);
+    const [label, call, variant] = it.primary;
     return `
-      <li class="rounded-lg border border-line border-l-4 ${TONE_EDGE[it.tone]} bg-white px-3 py-2.5" data-need="${it.key}">
-        <div class="flex items-center gap-2">
-          <span class="w-6 shrink-0 text-center text-lg">${it.icon}</span>
-          <p class="min-w-0 flex-1 text-sm font-medium leading-snug ${open ? "" : "line-clamp-1"}">${it.title}</p>
-          ${hasMore ? `<button onclick="A.toggle('${it.key}')" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted hover:bg-soft" aria-label="More">${open ? "✕" : "⋯"}</button>` : ""}
+      <li data-need="${it.key}">
+        <div class="flex items-center gap-3 px-3 py-2.5">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${NEED_TINT[it.tone] ?? NEED_TINT.neutral}">${Ic(NEED_ICON[it.icon] ?? "bell", "h-4 w-4")}</span>
+          <button onclick="A.toggle('${it.key}')" class="min-w-0 flex-1 text-left">
+            <span class="block text-sm font-medium leading-snug text-ink ${open ? "" : "truncate"}">${it.title}</span>
+            <span class="mt-0.5 block text-xs leading-snug text-muted ${open ? "" : "truncate"}">${shown.join(" · ")}</span>
+          </button>
+          <button onclick="${call}" class="h-8 shrink-0 rounded-full px-3 text-xs font-semibold ${ACT[variant] ?? ACT.secondary}">${esc(plain(label))}</button>
         </div>
-        <div class="mt-1.5 flex items-center gap-1 pl-8">
-          <div class="flex min-w-0 flex-1 flex-wrap gap-1">${(open ? chips : chips.slice(0, 2)).join("")}</div>
-          ${Btn(it.primary[0], it.primary[1], it.primary[2], "", "!min-h-9 shrink-0 !px-3")}
-        </div>
-        ${open ? `<div class="mt-3 space-y-2 pl-8">${it.detail ?? ""}${it.more?.length ? `<div class="flex flex-wrap gap-2">${it.more.map(([l, c]) => Btn(l, c, "secondary")).join("")}</div>` : ""}</div>` : ""}
+        ${open ? `<div class="space-y-2 px-3 pb-3 pl-14">${it.detail ?? ""}${it.more?.length ? `<div class="flex flex-wrap gap-1.5">${it.more.map(([l, c]) => `<button onclick="${c}" class="h-8 rounded-full border border-line bg-white px-3 text-xs font-medium text-ink">${esc(plain(l))}</button>`).join("")}</div>` : ""}</div>` : ""}
       </li>`;
   }
 
@@ -767,6 +803,7 @@
   const PLAN_TABS = [["timeline", "📅", "Timeline"], ["board", "🗂", "Board"], ["site", "🗺", "Site"]];
   const MORE_TABS = [["list", "📋", "Task list"], ["notes", "📒", "Site notes"], ["docs", "📄", "Documents"], ["history", "🕘", "History"], ["setup", "⚙", "Setup"]];
 
+  const SAMPLE_EMAIL = "Von: Stahlhandel Müller\nBetreff: Lieferung Bewehrung Abschnitt C\n\nSehr geehrter Herr Bauer,\nleider können wir den Bewehrungsstahl für Abschnitt C (6,2 t) nicht wie geplant am Freitag liefern. Neuer Liefertermin ist Dienstag. Bitte bestätigen Sie uns kurz.\n\nMit freundlichen Grüßen\nStahlhandel Müller";
   function Shell() {
     const m = me();
     const needs = needsYou().length;
@@ -780,31 +817,31 @@
       <aside class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-1 bg-[#2e2e30] px-3 py-4 text-white lg:flex">
         <div class="mb-3 flex items-center gap-2 px-2"><span class="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-sm font-semibold">S</span><span class="font-semibold">SiteFlow</span></div>
         <button onclick="A.record()" class="mb-3 flex h-10 items-center gap-2 rounded-full border border-white/25 px-3 text-sm hover:bg-white/10"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs">+</span>Create note</button>
-        ${RailItem("☀", "Today", view === "today", "A.go('today')", needs)}
-        ${RailItem("🗺", "Plan", view === "plan", "A.go('plan')")}
+        ${RailItem(Ic("home", "h-4 w-4"), "Today", view === "today", "A.go('today')", needs)}
+        ${RailItem(Ic("plan", "h-4 w-4"), "Plan", view === "plan", "A.go('plan')")}
         <button onclick="A.profile(true)" class="mt-auto flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-white/10" aria-label="Profile">${Avatar(m.id, m.name, 28)}<span class="truncate">${esc(m.name)}</span></button>
       </aside>
 
       <header class="sticky top-0 z-20 border-b border-line bg-white">
-        <div class="flex items-center gap-2 px-4 py-2 sm:px-6">
+        <div class="flex items-center gap-2 px-4 pb-2 pt-3 sm:px-6">
           <div class="min-w-0 flex-1">
-            <h1 class="truncate text-xl font-semibold text-ink">${title}</h1>
-            ${view === "today" ? `<p class="text-xs font-semibold text-muted">${dayLabel(S.today)} · ${esc(m.name.split(" ")[0])}</p>` : view === "plan" ? `<p class="truncate text-xs font-semibold text-muted">${esc(S.project.name)}</p>` : ""}
+            <h1 class="truncate text-[20px] font-semibold leading-tight text-ink">${title}</h1>
+            ${view === "today" ? `<p class="text-xs text-muted">${dayLabel(S.today)} · ${esc(m.name.split(" ")[0])}</p>` : view === "plan" ? `<p class="truncate text-xs text-muted">${esc(S.project.name)}</p>` : ""}
           </div>
-          <button onclick="A.profile(true)" class="flex h-11 w-11 items-center justify-center rounded-full lg:hidden" aria-label="Profile">${Avatar(m.id, m.name, 38)}</button>
+          <button onclick="A.profile(true)" class="flex h-10 w-10 items-center justify-center rounded-full lg:hidden" aria-label="Profile">${Avatar(m.id, m.name, 30)}</button>
         </div>
         ${view === "plan" ? PlanTabs() : ""}
       </header>
 
-      <main class="mx-auto ${wide ? "max-w-6xl" : "max-w-xl"} px-3 pb-32 pt-4 sm:px-6 lg:pb-10">
+      <main class="mx-auto ${wide ? "max-w-6xl" : "max-w-xl"} px-3 pb-24 pt-3 sm:px-6 lg:pb-10">
         ${main}
-        <p class="mt-8 text-center text-xs text-faint">Prototype · drafts aren't legal advice</p>
+        <p class="mt-8 text-center text-[11px] text-faint">Prototype · drafts aren't legal advice</p>
       </main>
 
-      <nav class="fixed inset-x-0 bottom-0 z-20 grid grid-cols-3 items-end border-t-2 border-line bg-white pb-safe lg:hidden">
-        ${BottomTab("☀", "Today", view === "today", "A.go('today')", needs)}
-        <div class="flex justify-center"><button onclick="A.record()" aria-label="Record" class="-mt-7 mb-1 flex h-[76px] w-[76px] items-center justify-center rounded-full text-4xl text-white shadow-xl ring-[6px] ring-white active:scale-95 ${U.capture.listening ? "animate-pulse bg-bad" : "bg-accent"}">${U.capture.listening ? "■" : "🎙"}</button></div>
-        ${BottomTab("🗺", "Plan", view === "plan", "A.go('plan')")}
+      <nav class="fixed inset-x-0 bottom-0 z-20 grid h-[58px] grid-cols-3 items-center border-t border-line bg-white/95 pb-safe backdrop-blur lg:hidden">
+        ${BottomTab("home", "Today", view === "today", "A.go('today')", needs)}
+        <div class="flex justify-center"><button onclick="A.record()" aria-label="Record" class="-mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md ring-4 ring-white active:scale-95 ${U.capture.listening ? "animate-pulse bg-bad" : "bg-accent"}">${Ic(U.capture.listening ? "stop" : "mic", "h-6 w-6")}</button></div>
+        ${BottomTab("plan", "Plan", view === "plan", "A.go('plan')")}
       </nav>
 
       ${U.profileOpen ? Profile() : ""}
@@ -813,20 +850,20 @@
       ${U.contractPicker ? ContractPicker() : ""}
       ${U.stepPick !== null && U.capture.draft ? StepPicker() : ""}
       ${U.preview ? Preview() : ""}
+      ${U.email.open ? EmailPaste() : ""}
       ${U.logModal ? Modal("📒 Site note", LogCard(S.entries.find((e) => e.id === U.logModal)), "A.closeLog()") : ""}
       ${U.toast ? `<div class="fixed bottom-28 left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white shadow-xl lg:bottom-6">${esc(U.toast)}</div>` : ""}
     </div>`;
   }
   const RailItem = (icon, label, active, onclick, count) => `
     <button onclick="${onclick}" class="flex h-9 items-center gap-2 rounded-md px-2 text-sm ${active ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10"}">
-      <span class="w-5 text-center">${icon}</span><span class="flex-1 text-left">${label}</span>
+      <span class="flex w-5 justify-center">${icon}</span><span class="flex-1 text-left">${label}</span>
       ${count ? `<span class="rounded-full bg-accent px-1.5 text-[11px] text-white">${count}</span>` : ""}
     </button>`;
   const BottomTab = (icon, label, active, onclick, count) => `
-    <button onclick="${onclick}" class="relative flex min-h-[64px] flex-col items-center justify-center gap-0.5 text-xs font-bold ${active ? "text-accent" : "text-muted"}">
-      <span class="text-2xl leading-none">${icon}</span>${label}
-      ${active ? `<span class="absolute inset-x-8 top-0 h-1 rounded-b bg-accent"></span>` : ""}
-      ${count ? `<span class="absolute right-[24%] top-1.5 min-w-5 rounded-full bg-accent px-1.5 text-[11px] font-bold text-white">${count}</span>` : ""}
+    <button onclick="${onclick}" class="relative flex h-full flex-col items-center justify-center gap-0.5 text-[10.5px] font-medium ${active ? "text-ink" : "text-faint"}">
+      ${Ic(icon, "h-[22px] w-[22px]")}${label}
+      ${count ? `<span class="absolute left-1/2 top-1.5 ml-2 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] font-semibold leading-4 text-white">${count}</span>` : ""}
     </button>`;
 
   function Profile() {
@@ -846,25 +883,27 @@
     const items = needsYou();
     return `
       ${RecordHero()}
-      ${SectionTitle(`Needs you (${items.length})`)}
-      <ul class="space-y-2">${items.map(NeedCard).join("") || `<li class="rounded-lg border border-dashed border-line p-6 text-center text-3xl">✓</li>`}</ul>
       ${MilestoneStrip()}
+      ${SectionTitle(`Needs you <span class="font-normal text-faint">${items.length}</span>`)}
+      ${items.length ? `<ul class="divide-y divide-soft overflow-hidden rounded-lg border border-line bg-white">${items.map(NeedCard).join("")}</ul>` : `<p class="rounded-lg border border-line bg-white px-4 py-5 text-center text-sm text-muted">All clear</p>`}
       ${MyTasks()}
-      <div class="mt-6 flex flex-col items-center gap-2">
-        ${U.ai.text ? `<div class="w-full whitespace-pre-line rounded-lg bg-white p-3 text-sm">${esc(U.ai.text)}<p class="mt-1 text-[11px] text-violet-700">${esc(U.ai.note)}</p></div>` : ""}
-        ${U.reportMenu ? `<div class="grid w-full grid-cols-2 gap-2">${Btn("✨ Summarise day", "A.summarise()")}${Btn("📄 Daily report", "A.dailyReport()", "primary")}</div>` : ""}
-        ${Btn(U.reportMenu ? "✕" : "📄 Day report …", "A.reportMenu()", "ghost", 'aria-label="Day report"')}
+      <div class="mt-5 flex flex-col items-center gap-2">
+        ${U.ai.text ? `<div class="w-full whitespace-pre-line rounded-lg border border-line bg-white p-3 text-sm">${esc(U.ai.text)}<p class="mt-1 text-[11px] text-violet-700">${esc(U.ai.note)}</p></div>` : ""}
+        ${U.reportMenu ? `<div class="grid w-full grid-cols-2 gap-2">${Btn("Summarise day", "A.summarise()")}${Btn("Daily report", "A.dailyReport()", "primary")}</div>` : ""}
+        <button onclick="A.reportMenu()" class="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted hover:bg-soft">${Ic("file", "h-4 w-4")}${U.reportMenu ? "Close" : "End-of-day report"}</button>
       </div>`;
   }
 
   function RecordHero() {
     const c = U.capture;
-    if (c.draft) return `<button onclick="A.go('record')" class="flex min-h-14 w-full items-center gap-3 rounded-lg border border-accent bg-accent-tint px-4 text-left font-bold">📝 <span class="flex-1 truncate">${esc(c.draft.summary)}</span><span class="text-accent">Save →</span></button>`;
+    if (c.draft) return `<button onclick="A.go('record')" class="flex h-11 w-full items-center gap-2.5 rounded-full border border-accent bg-accent-tint pl-1.5 pr-4 text-left text-sm"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white">${Ic("pen", "h-4 w-4")}</span><span class="flex-1 truncate font-medium">${esc(c.draft.summary)}</span><span class="font-medium text-accent-dark">Save</span></button>`;
     return `
       <section class="flex items-center gap-2">
-        <button onclick="A.record()" aria-label="Record note" class="flex h-14 flex-1 items-center justify-center gap-2 rounded-lg bg-accent text-base font-semibold text-white shadow-sm active:scale-[0.99]">🎙 Record a note</button>
+        <button onclick="A.record()" aria-label="Record note" class="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-line bg-white pl-1.5 pr-4 text-left text-sm text-muted shadow-sm active:bg-canvas">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white">${Ic("mic", "h-4 w-4")}</span><span class="truncate">Record a site note…</span>
+        </button>
         <div class="relative">
-          <button onclick="A.attachMenu('today')" class="flex h-14 w-14 items-center justify-center rounded-lg border border-line bg-white text-xl active:scale-95" aria-label="Attach">📎</button>
+          <button onclick="A.attachMenu('today')" class="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-muted shadow-sm" aria-label="Attach">${Ic("clip", "h-[18px] w-[18px]")}</button>
           ${U.attachMenu === "today" ? AttachMenu() : ""}
         </div>
       </section>`;
@@ -874,8 +913,8 @@
     const sched = schedule(S.tasks);
     const ms = scopeMilestones();
     if (!ms.length) return "";
-    return `<div class="mt-5 flex gap-2 overflow-x-auto pb-1">${milestoneSlips(S.tasks, sched).filter((s) => ms.some((m) => m.id === s.milestone.id)).map((s) => `
-      <button onclick="A.go('plan','timeline')" class="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-bold ${s.slip ? "bg-bad-soft text-bad" : "bg-ok-soft text-ok"}">
+    return `<div class="mt-3 flex gap-1.5 overflow-x-auto">${milestoneSlips(S.tasks, sched).filter((s) => ms.some((m) => m.id === s.milestone.id)).map((s) => `
+      <button onclick="A.go('plan','timeline')" class="flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ${s.slip ? "bg-bad-soft text-bad" : "bg-ok-soft text-ok"}">
         ◆ ${esc(s.milestone.name.replace(/ complete$/, ""))} · ${s.slip ? `+${s.slip} d` : "on track"} · ${dayLabel(s.milestone.targetDay)}</button>`).join("")}</div>`;
   }
 
@@ -884,18 +923,18 @@
     const list = sortTasks(S.tasks.filter((t) => t.status !== "done")
       .filter((t) => (isSM() ? sched[t.id].es <= S.today + 2 && sched[t.id].ef >= S.today : t.team === S.persona)), sched);
     return `${SectionTitle(isSM() ? `On site (${list.length})` : `My tasks (${list.length})`)}
-      <ul class="divide-y divide-soft rounded-lg border border-line bg-white px-3">${list.map((t) => TaskRow(t, sched)).join("") || `<li class="py-4 text-center text-2xl">🎉</li>`}</ul>`;
+      <ul class="divide-y divide-soft rounded-lg border border-line bg-white px-3">${list.map((t) => TaskRow(t, sched)).join("") || `<li class="py-4 text-center text-sm text-muted">Nothing open</li>`}</ul>`;
   }
   const TaskRow = (t, sched, link) => {
     const f = PERSONAS.find((p) => p.team === t.team);
-    return `<li><div role="button" tabindex="0" onclick="A.openTask('${t.id}')" class="flex min-h-14 cursor-pointer items-center gap-3 py-1.5 ${link ? "opacity-60" : ""}">
+    return `<li><div role="button" tabindex="0" onclick="A.openTask('${t.id}')" class="flex min-h-[52px] cursor-pointer items-center gap-3 py-2 ${link ? "opacity-60" : ""}">
       ${CheckCircle(t.status === "done", `A.toggleDone('${t.id}')`, !canEdit(t))}
       <span class="min-w-0 flex-1">
-        <span class="block truncate text-sm font-semibold ${t.status === "done" ? "text-faint line-through" : "text-ink"}">${esc(t.name)} ${esc(t.section)}${t.milestone ? ` <span class="text-warn">◆</span>` : ""}</span>
+        <span class="block truncate text-sm font-medium ${t.status === "done" ? "text-faint line-through" : "text-ink"}">${esc(t.name)} ${esc(t.section)}${t.milestone ? ` <span class="text-warn">◆</span>` : ""}</span>
         <span class="mt-0.5 flex flex-wrap items-center gap-1">${StatusChips(t, false)}${link ? Badge(`🔗 ${link}`) : ""}${MissingChip(t)}
-          <span class="text-xs font-semibold ${isOverdue(t) ? "text-bad" : "text-muted"}">${dayShort(sched[t.id].es).wd}–${dayLabel(sched[t.id].ef)}</span></span>
+          <span class="text-xs ${isOverdue(t) ? "text-bad" : "text-muted"}">${dayShort(sched[t.id].es).wd}–${dayLabel(sched[t.id].ef)}</span></span>
       </span>
-      ${Avatar(f.id, f.name, 28)}
+      ${Avatar(f.id, f.name, 24)}
     </div></li>`;
   };
 
@@ -908,14 +947,24 @@
   const fieldLabel = (m) => ({ startTime: "Start time", responsibleParty: "Responsible", estimatedDelayDays: "Delay (days)", cause: "Cause", material: "Material", quantity: "Quantity" })[m] ?? m;
 
   function AttachMenu() {
-    const item = (icon, label, inner) => `<label class="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl px-3 text-base font-semibold text-ink hover:bg-canvas"><span class="text-xl">${icon}</span>${label}${inner}</label>`;
+    const row = "flex h-11 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-left text-sm text-ink hover:bg-canvas";
+    const icon = (n) => `<span class="text-muted">${Ic(n, "h-[18px] w-[18px]")}</span>`;
     return `
       <div class="fixed inset-0 z-30" onclick="A.attachMenu(null)"></div>
-      <div class="absolute left-0 top-full z-40 mt-2 w-56 rounded-lg border border-line bg-white p-2 shadow-xl">
-        ${item("📄", "PDF", `<input type="file" accept="application/pdf,.pdf" class="hidden" onchange="A.attachFile(this,'pdf')">`)}
-        ${item("📷", "Photo", `<input type="file" accept="image/*" class="hidden" onchange="A.attachFile(this,'photo')">`)}
-        <button onclick="A.contractPicker(true)" class="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-base font-semibold text-ink hover:bg-canvas"><span class="text-xl">📑</span>Contract</button>
+      <div class="absolute right-0 top-full z-40 mt-2 w-56 rounded-lg border border-line bg-white p-1.5 shadow-lg">
+        <label class="${row}">${icon("file")}PDF<input type="file" accept="application/pdf,.pdf" class="hidden" onchange="A.attachFile(this,'pdf')"></label>
+        <label class="${row}">${icon("photo")}Photo<input type="file" accept="image/*" class="hidden" onchange="A.attachFile(this,'photo')"></label>
+        <button onclick="A.contractPicker(true)" class="${row}">${icon("contract")}Contract</button>
+        <div class="my-1 border-t border-soft"></div>
+        <button onclick="A.fromMinutes()" class="${row}">${icon("minutes")}Meeting minutes</button>
+        <button onclick="A.emailOpen(true)" class="${row}">${icon("mail")}Paste email</button>
       </div>`;
+  }
+  function EmailPaste() {
+    return Modal("Paste email", `
+      <textarea class="${inputCls} min-h-48 text-sm" placeholder="Paste the email here" oninput="U.email.text=this.value">${esc(U.email.text)}</textarea>
+      <div class="mt-2 grid grid-cols-[1fr_auto] gap-2">${Btn("Sort it", "A.emailSort()", "primary", "", "w-full")}${Btn("Sample", "A.emailSample()", "secondary")}</div>
+      <p class="mt-2 text-xs text-muted">Becomes one card: summary, open items with owner and deadline, and a reply or notice if it reports a deviation.</p>`, "A.emailOpen(false)");
   }
   function ContractPicker() {
     const q = U.contractPicker.q.trim().toLowerCase();
@@ -954,25 +1003,25 @@
 
   function RecordScreen() {
     const c = U.capture, d = c.draft;
-    const langSwitch = `<div class="flex rounded-full bg-soft p-1 text-xs font-bold">${["de-DE", "en-US"].map((l) => `<button onclick="A.lang('${l}')" class="min-h-9 rounded-full px-3 ${c.lang === l ? "bg-white shadow" : "text-muted"}">${l === "de-DE" ? "DE" : "EN"}</button>`).join("")}</div>`;
+    const langSwitch = `<div class="flex rounded-full bg-soft p-0.5 text-xs font-medium">${["de-DE", "en-US"].map((l) => `<button onclick="A.lang('${l}')" class="h-7 rounded-full px-3 ${c.lang === l ? "bg-white shadow-sm" : "text-muted"}">${l === "de-DE" ? "DE" : "EN"}</button>`).join("")}</div>`;
     const atts = c.attachments.length ? `<div class="flex flex-wrap gap-2">${c.attachments.map((a, i) => AttachChip(a, `A.previewCapture(${i})`, `A.removeAttachment(${i})`)).join("")}</div>` : "";
     if (d) return ConfirmCard(atts);
     const samples = SAMPLE_PHRASES.map((s, i) => ({ ...s, i })).filter((s) => isSM() || s.persona === S.persona || s.persona === "site-manager");
     return `
       <div class="flex justify-end">${langSwitch}</div>
-      <div class="mt-6 flex items-center justify-center gap-6">
+      <div class="mt-8 flex items-center justify-center gap-8">
+        <span class="h-12 w-12"></span>
+        <button onclick="A.mic()" aria-label="Record" class="flex h-24 w-24 items-center justify-center rounded-full text-white shadow-lg ring-8 transition active:scale-95 ${c.listening ? "animate-pulse bg-bad ring-bad-soft" : "bg-accent ring-accent-soft"}">${Ic(c.listening ? "stop" : "mic", "h-10 w-10")}</button>
         <div class="relative">
-          <button onclick="A.attachMenu('record')" class="flex h-16 w-16 items-center justify-center rounded-full border border-line bg-white text-2xl active:scale-95" aria-label="Attach">📎${c.attachments.length ? `<span class="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 text-xs font-bold text-white">${c.attachments.length}</span>` : ""}</button>
+          <button onclick="A.attachMenu('record')" class="relative flex h-12 w-12 items-center justify-center rounded-full border border-line bg-white text-muted active:scale-95" aria-label="Attach">${Ic("clip", "h-5 w-5")}${c.attachments.length ? `<span class="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 text-xs font-bold text-white">${c.attachments.length}</span>` : ""}</button>
           ${U.attachMenu === "record" ? AttachMenu() : ""}
         </div>
-        <button onclick="A.mic()" aria-label="Record" class="flex h-36 w-36 items-center justify-center rounded-full text-6xl text-white shadow-xl ring-8 transition active:scale-95 ${c.listening ? "animate-pulse bg-bad ring-bad-soft" : "bg-accent ring-accent-soft"}">${c.listening ? "■" : "🎙"}</button>
-        <span class="h-16 w-16"></span>
       </div>
-      <p class="mt-4 text-center text-sm font-semibold text-muted">${c.listening ? "Listening… stop to sort" : "Tap, speak, stop – it sorts itself"}</p>
+      <p class="mt-5 text-center text-sm text-muted">${c.listening ? "Listening… stop to sort" : "Tap, speak, stop – it sorts itself"}</p>
       <textarea id="capture-text" rows="3" oninput="U.capture.text=this.value" onkeydown="A.typedKey(event)" onchange="A.typedDone(this.value)" class="${inputCls} mt-4" placeholder="${c.lang === "de-DE" ? "…oder tippen ↵" : "…or type ↵"}">${esc(c.text)}</textarea>
       ${atts ? `<div class="mt-3">${atts}</div>` : ""}
-      <div class="mt-6 flex justify-center">${chipBtn(`🧪 Demo ${U.demo ? "on" : "off"}`, "A.demo()", U.demo)}</div>
-      ${U.demo ? `<div class="mt-3 flex flex-wrap justify-center gap-2">${samples.map((s) => `<button onclick="A.sample(${s.i})" class="min-h-11 rounded-full border border-line bg-white px-3 text-xs font-semibold text-muted hover:border-accent">${esc(s.label)}</button>`).join("")}</div>` : ""}`;
+      <div class="mt-6 flex justify-center">${chipBtn(`Demo phrases ${U.demo ? "on" : "off"}`, "A.demo()", U.demo)}</div>
+      ${U.demo ? `<div class="mt-3 flex flex-wrap justify-center gap-2">${samples.map((s) => `<button onclick="A.sample(${s.i})" class="h-8 rounded-full border border-line bg-white px-3 text-xs font-medium text-muted hover:border-accent">${esc(s.label)}</button>`).join("")}</div>` : ""}`;
   }
 
   function ConfirmCard(atts) {
@@ -984,25 +1033,25 @@
     const resp = d.fields.responsibleParty ? ` (${String(d.fields.responsibleParty).split(" (")[0].toLowerCase()})` : "";
     const steps = d.nextSteps ?? [];
     const ext = steps.filter((st) => ["notify", "contact", "task"].includes(st.kind) && S.contacts.find((x) => x.id === st.who && !x.usesApp));
-    const ask = d.ask === "delay" ? `<p class="text-sm font-bold">❓ How long?</p><div class="mt-2 flex flex-wrap gap-2">${[1, 2, 3].map((n) => `<button onclick="A.answer('estimatedDelayDays',${n})" class="min-h-11 rounded-full border border-warn bg-white px-4 text-sm font-bold">${n} day${n > 1 ? "s" : ""}</button>`).join("")}</div>`
-      : d.ask === "responsible" ? `<p class="text-sm font-bold">❓ Who caused it?</p><div class="mt-2 flex flex-wrap gap-2">${PARTIES.map((p) => `<button onclick="A.answer('responsibleParty','${p}')" class="min-h-11 rounded-full border border-warn bg-white px-3 text-sm font-semibold">${p.split(" (")[0]}</button>`).join("")}</div>`
-      : d.ask === "task" ? `<p class="text-sm font-bold">❓ Which task?</p><div class="mt-2 flex flex-wrap gap-2">${S.tasks.filter((x) => x.status !== "done" && (isSM() || x.team === S.persona)).slice(0, 6).map((x) => `<button onclick="A.answer('taskId','${x.id}')" class="min-h-11 rounded-full border border-warn bg-white px-3 text-sm font-semibold">${esc(x.name)} ${esc(x.section)}</button>`).join("")}</div>`
+    const ask = d.ask === "delay" ? `<p class="text-sm font-bold">❓ How long?</p><div class="mt-2 flex flex-wrap gap-2">${[1, 2, 3].map((n) => `<button onclick="A.answer('estimatedDelayDays',${n})" class="h-8 rounded-full border border-warn bg-white px-3 text-[13px] font-medium">${n} day${n > 1 ? "s" : ""}</button>`).join("")}</div>`
+      : d.ask === "responsible" ? `<p class="text-sm font-bold">❓ Who caused it?</p><div class="mt-2 flex flex-wrap gap-2">${PARTIES.map((p) => `<button onclick="A.answer('responsibleParty','${p}')" class="h-8 rounded-full border border-warn bg-white px-3 text-[13px] font-medium">${p.split(" (")[0]}</button>`).join("")}</div>`
+      : d.ask === "task" ? `<p class="text-sm font-bold">❓ Which task?</p><div class="mt-2 flex flex-wrap gap-2">${S.tasks.filter((x) => x.status !== "done" && (isSM() || x.team === S.persona)).slice(0, 6).map((x) => `<button onclick="A.answer('taskId','${x.id}')" class="h-8 rounded-full border border-warn bg-white px-3 text-[13px] font-medium">${esc(x.name)} ${esc(x.section)}</button>`).join("")}</div>`
       : "";
     const stepChip = (st, i) => `
-      <button onclick="A.pickStep(${i})" class="inline-flex min-h-11 items-center gap-1.5 rounded-full border ${st.source === "ai" ? "border-violet-300 bg-violet-50" : "border-line bg-white"} px-3 text-left text-sm font-semibold">
+      <button onclick="A.pickStep(${i})" class="inline-flex min-h-8 items-center gap-1.5 rounded-full border ${st.source === "ai" ? "border-violet-300 bg-violet-50" : "border-line bg-white"} px-3 text-left text-[13px] font-medium">
         → ${KIND_VERB[st.kind]} ${st.who ? esc(shortName(st.who)) : "?"}${st.dueDay !== undefined ? `, ${shortDay(st.dueDay)}` : ""}
         ${st.source === "ai" ? `<span class="rounded bg-violet-600 px-1 text-[10px] font-semibold text-white">AI</span>` : st.source === "user" ? `<span class="rounded bg-warn px-1 text-[10px] font-semibold text-white">YOU</span>` : ""}
       </button>`;
     const detailKeys = ["cause", "responsibleParty", "startTime", "estimatedDelayDays", "material", "quantity"];
     return `
-      <section class="rounded-xl border ${prob ? "border-bad" : "border-line"} ${prob ? "border-l-[8px]" : ""} bg-white p-4">
-        <p class="text-base font-semibold leading-snug">${dot} ${head.map(esc).join(" · ")}</p>
+      <section class="rounded-lg border ${prob ? "border-bad/40 border-l-4 border-l-bad" : "border-line"} bg-white p-4">
+        <p class="text-[15px] font-semibold leading-snug">${head.map(esc).join(" · ")}</p>
         ${d.fields.cause ? `<p class="mt-1 text-sm text-ink">Cause: ${esc(d.fields.cause)}${esc(resp)}</p>` : ""}
         <div class="mt-2 flex flex-wrap gap-1">${delay ? DelayChip(delay) : ""}${ext.length ? Badge(`✉ ${ext.length} update${ext.length > 1 ? "s" : ""}`, "blue") : ""}${t && delay && d.type !== "stoppage" ? Badge("📅 → site manager", "amber") : ""}</div>
         ${steps.length ? `<p class="mt-3 text-xs font-bold uppercase text-muted">Next</p><div class="mt-1 flex flex-wrap gap-2">${steps.map(stepChip).join("")}</div>` : ""}
         ${ask ? `<div class="mt-3 rounded-lg bg-warn-soft p-3">${ask}</div>` : ""}
         ${atts ? `<div class="mt-3">${atts}</div>` : ""}
-        <div class="mt-4 grid grid-cols-[1fr_auto] gap-2">${Btn("✓ Save", "A.saveLog()", "primary", "", "w-full text-base")}${Btn(U.details ? "▲" : "Edit details", "A.details()", "secondary")}</div>
+        <div class="mt-4 grid grid-cols-[1fr_auto] gap-2">${Btn("Save", "A.saveLog()", "primary", "", "w-full")}${Btn(U.details ? "▲" : "Edit details", "A.details()", "secondary")}</div>
         ${U.details ? `
         <div class="mt-4 space-y-3 border-t-2 border-soft pt-4">
           ${Field("🗣 Words", `<textarea class="${inputCls}" rows="2" oninput="U.capture.text=this.value">${esc(c.text)}</textarea>`)}
@@ -1029,14 +1078,15 @@
   // ================================================================== VIEW: Plan (Timeline · Board · Site · More)
   function PlanTabs() {
     const more = MORE_TABS.find(([id]) => id === U.planTab);
-    return `<div class="flex gap-1 overflow-x-auto px-3 pb-2 sm:px-5">
-      ${PLAN_TABS.map(([id, icon, label]) => `<button onclick="A.planTab('${id}')" class="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-bold ${U.planTab === id ? "bg-ink text-white" : "text-muted hover:bg-soft"}">${icon} ${label}</button>`).join("")}
-      <button onclick="A.more(true)" class="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-bold ${more ? "bg-ink text-white" : "text-muted hover:bg-soft"}">${more ? `${more[1]} ${more[2]}` : "⋯ More"}</button>
+    const tab = (on, label, call) => `<button onclick="${call}" class="relative shrink-0 px-1 pb-2.5 pt-1 text-sm ${on ? "font-medium text-ink" : "text-muted"}">${label}${on ? '<span class="absolute inset-x-0 bottom-0 h-0.5 rounded bg-ink"></span>' : ""}</button>`;
+    return `<div class="flex gap-5 overflow-x-auto px-4 sm:px-6">
+      ${PLAN_TABS.map(([id, , label]) => tab(U.planTab === id, label, `A.planTab('${id}')`)).join("")}
+      ${tab(!!more, more ? more[2] : "More", "A.more(true)")}
     </div>`;
   }
   function MoreMenu() {
     return Modal("⋯ More", `<ul class="space-y-2">${MORE_TABS.map(([id, icon, label]) => `
-      <li><button onclick="A.planTab('${id}')" class="flex min-h-14 w-full items-center gap-3 rounded-lg border px-4 text-left text-base font-bold ${U.planTab === id ? "border-accent bg-accent-tint" : "border-line"}"><span class="text-xl">${icon}</span>${label}
+      <li><button onclick="A.planTab('${id}')" class="flex min-h-12 w-full items-center gap-3 rounded-md border px-3 text-left text-sm font-medium ${U.planTab === id ? "border-accent bg-accent-tint" : "border-line"}"><span class="text-xl">${icon}</span>${label}
         ${id === "docs" && S.notices.some((n) => n.status === "draft") ? Badge(String(S.notices.filter((n) => n.status === "draft").length), "accent", 'style="margin-left:auto"') : ""}</button></li>`).join("")}</ul>`, "A.more(false)");
   }
   function Plan() {
@@ -1045,7 +1095,7 @@
 
   function ScopeBar() {
     if (!isSM()) return `<div class="mb-3 flex flex-wrap gap-1">${Badge(`👤 ${esc(TEAMS.find((t) => t.id === S.persona).name)}`, "accent")}${Badge("🔗 linked · read-only")}</div>`;
-    return `<div class="mb-3 flex gap-2">${chipBtn("👥 All", "A.scope('all')", U.scope === "all")}${chipBtn("👤 Mine", "A.scope('mine')", U.scope === "mine")}</div>`;
+    return `<div class="mb-3 inline-flex rounded-md bg-soft p-0.5 text-[13px]">${[["all", "All"], ["mine", "Mine"]].map(([k, l]) => `<button onclick="A.scope('${k}')" class="h-7 rounded px-3 ${U.scope === k ? "bg-white font-medium text-ink shadow-sm" : "text-muted"}">${l}</button>`).join("")}</div>`;
   }
 
   // ---- Task list (Plan › More)

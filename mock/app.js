@@ -140,6 +140,10 @@
     contract: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
     minutes: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
     mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+    pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+    chev: '<path d="m9 18 6-6-6-6"/>',
     stop: '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>',
   };
   const Ic = (name, cls = "h-5 w-5") => `<svg viewBox="0 0 24 24" class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] ?? ""}</svg>`;
@@ -1003,25 +1007,61 @@
 
   function RecordScreen() {
     const c = U.capture, d = c.draft;
-    const langSwitch = `<div class="flex rounded-full bg-soft p-0.5 text-xs font-medium">${["de-DE", "en-US"].map((l) => `<button onclick="A.lang('${l}')" class="h-7 rounded-full px-3 ${c.lang === l ? "bg-white shadow-sm" : "text-muted"}">${l === "de-DE" ? "DE" : "EN"}</button>`).join("")}</div>`;
+    const langSwitch = `<div class="flex rounded-full bg-soft p-0.5 text-xs font-medium">${["de-DE", "en-US"].map((l) => `<button onclick="A.lang('${l}')" class="h-7 rounded-full px-3 ${c.lang === l ? "bg-white text-ink shadow-sm" : "text-muted"}">${l === "de-DE" ? "DE" : "EN"}</button>`).join("")}</div>`;
     const atts = c.attachments.length ? `<div class="flex flex-wrap gap-2">${c.attachments.map((a, i) => AttachChip(a, `A.previewCapture(${i})`, `A.removeAttachment(${i})`)).join("")}</div>` : "";
     if (d) return ConfirmCard(atts);
     const samples = SAMPLE_PHRASES.map((s, i) => ({ ...s, i })).filter((s) => isSM() || s.persona === S.persona || s.persona === "site-manager");
+    const recent = S.entries.filter((e) => e.day === S.today).slice(0, 3);
+    const wave = [10, 18, 28, 16, 24, 12, 20, 30, 14, 22, 10];
+    const tip = (icon, text) => `<li class="flex items-center gap-3 py-2"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-tint text-accent-dark">${Ic(icon, "h-3.5 w-3.5")}</span><span class="text-sm text-ink">${text}</span></li>`;
     return `
-      <div class="flex justify-end">${langSwitch}</div>
-      <div class="mt-8 flex items-center justify-center gap-8">
-        <span class="h-12 w-12"></span>
-        <button onclick="A.mic()" aria-label="Record" class="flex h-24 w-24 items-center justify-center rounded-full text-white shadow-lg ring-8 transition active:scale-95 ${c.listening ? "animate-pulse bg-bad ring-bad-soft" : "bg-accent ring-accent-soft"}">${Ic(c.listening ? "stop" : "mic", "h-10 w-10")}</button>
-        <div class="relative">
-          <button onclick="A.attachMenu('record')" class="relative flex h-12 w-12 items-center justify-center rounded-full border border-line bg-white text-muted active:scale-95" aria-label="Attach">${Ic("clip", "h-5 w-5")}${c.attachments.length ? `<span class="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 text-xs font-bold text-white">${c.attachments.length}</span>` : ""}</button>
-          ${U.attachMenu === "record" ? AttachMenu() : ""}
+      <section class="overflow-hidden rounded-xl border border-line bg-white">
+        <div class="flex items-start justify-between px-4 pt-4">
+          <div><h2 class="text-[15px] font-semibold text-ink">New site note</h2><p class="text-xs text-muted">${esc(S.project.name)} · ${dayLabel(S.today)}</p></div>
+          ${langSwitch}
         </div>
+        <div class="relative flex flex-col items-center px-4 pb-6 pt-6" style="background:radial-gradient(circle at 50% 42%, #fde3e3 0, rgba(253,227,227,0) 58%)">
+          <div class="flex items-center gap-6">
+            <span class="h-11 w-11"></span>
+            <button onclick="A.mic()" aria-label="Record" class="flex h-24 w-24 items-center justify-center rounded-full text-white shadow-lg ring-8 ring-white transition active:scale-95 ${c.listening ? "animate-pulse bg-bad" : "bg-accent"}">${Ic(c.listening ? "stop" : "mic", "h-10 w-10")}</button>
+            <div class="relative">
+              <button onclick="A.attachMenu('record')" class="relative flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-muted shadow-sm active:scale-95" aria-label="Attach">${Ic("clip", "h-[18px] w-[18px]")}${c.attachments.length ? `<span class="absolute -right-1 -top-1 min-w-4 rounded-full bg-ink px-1 text-[10px] font-semibold leading-4 text-white">${c.attachments.length}</span>` : ""}</button>
+              ${U.attachMenu === "record" ? AttachMenu() : ""}
+            </div>
+          </div>
+          <div class="mt-4 flex h-8 items-end gap-1">${wave.map((h, k) => `<span class="w-1 rounded-full ${c.listening ? "animate-pulse bg-accent" : "bg-line"}" style="height:${c.listening ? h : Math.max(4, h / 3)}px;animation-delay:${k * 90}ms"></span>`).join("")}</div>
+          <p class="mt-2 text-sm font-medium text-ink">${c.listening ? "Listening…" : "Tap to speak"}</p>
+          <p class="text-xs text-muted">${c.listening ? "Tap again to stop. It sorts itself." : "Stop when you're done. It sorts itself."}</p>
+          ${atts ? `<div class="mt-3 w-full">${atts}</div>` : ""}
+        </div>
+        <div class="relative border-t border-soft">
+          <textarea id="capture-text" rows="2" oninput="U.capture.text=this.value" onkeydown="A.typedKey(event)" class="block w-full resize-none border-0 bg-transparent px-4 py-3 pr-14 text-[15px] text-ink placeholder:text-faint focus:outline-none" placeholder="${c.lang === "de-DE" ? "…oder tippen" : "…or type it"}">${esc(c.text)}</textarea>
+          <button onclick="A.typedDone(document.getElementById('capture-text').value)" aria-label="Sort note" class="absolute bottom-2.5 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-ink text-white">${Ic("up", "h-4 w-4")}</button>
+        </div>
+      </section>
+
+      ${recent.length ? `${SectionTitle(`Today's notes <span class="font-normal text-faint">${S.entries.filter((e) => e.day === S.today).length}</span>`)}
+      <ul class="divide-y divide-soft overflow-hidden rounded-lg border border-line bg-white">${recent.map((e) => `
+        <li><button onclick="A.openLog('${e.id}')" class="flex w-full items-center gap-3 px-3 py-2.5 text-left">
+          <span class="h-2 w-2 shrink-0 rounded-full ${isProblem(e) ? "bg-bad" : "bg-line"}"></span>
+          <span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-ink">${esc(e.summary)}</span><span class="block truncate text-xs text-muted">${esc(TYPE_LABEL[e.type] ?? e.type)}${e.location ? ` · ${esc(e.location)}` : ""}</span></span>
+        </button></li>`).join("")}</ul>` : `
+      ${SectionTitle("Say it like this")}
+      <div class="rounded-lg border border-line bg-white px-3 py-1">
+        <ul class="divide-y divide-soft">
+          ${tip("pin", "Where: task, section, floor")}
+          ${tip("clock", "What happened, and since when")}
+          ${tip("user", "Who has to act, and by when")}
+        </ul>
+        <p class="border-t border-soft py-2.5 text-xs italic text-muted">„Bagger steht seit 10 Uhr in Abschnitt C, der Leitungsplan fehlt.“</p>
+      </div>`}
+
+      <div class="mt-6 flex items-center justify-between px-0.5">
+        <h2 class="text-[15px] font-semibold text-ink">Demo phrases</h2>
+        <button onclick="A.demo()" role="switch" aria-checked="${U.demo}" aria-label="Demo phrases" class="relative h-6 w-10 rounded-full transition ${U.demo ? "bg-accent" : "bg-line"}"><span class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${U.demo ? "left-[18px]" : "left-0.5"}"></span></button>
       </div>
-      <p class="mt-5 text-center text-sm text-muted">${c.listening ? "Listening… stop to sort" : "Tap, speak, stop – it sorts itself"}</p>
-      <textarea id="capture-text" rows="3" oninput="U.capture.text=this.value" onkeydown="A.typedKey(event)" onchange="A.typedDone(this.value)" class="${inputCls} mt-4" placeholder="${c.lang === "de-DE" ? "…oder tippen ↵" : "…or type ↵"}">${esc(c.text)}</textarea>
-      ${atts ? `<div class="mt-3">${atts}</div>` : ""}
-      <div class="mt-6 flex justify-center">${chipBtn(`Demo phrases ${U.demo ? "on" : "off"}`, "A.demo()", U.demo)}</div>
-      ${U.demo ? `<div class="mt-3 flex flex-wrap justify-center gap-2">${samples.map((s) => `<button onclick="A.sample(${s.i})" class="h-8 rounded-full border border-line bg-white px-3 text-xs font-medium text-muted hover:border-accent">${esc(s.label)}</button>`).join("")}</div>` : ""}`;
+      ${U.demo ? `<ul class="mt-1.5 divide-y divide-soft overflow-hidden rounded-lg border border-line bg-white">${samples.map((p) => `
+        <li><button onclick="A.sample(${p.i})" class="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-ink hover:bg-canvas"><span class="text-faint">${Ic("mic", "h-4 w-4")}</span><span class="flex-1">${esc(p.label)}</span><span class="text-faint">${Ic("chev", "h-4 w-4")}</span></button></li>`).join("")}</ul>` : ""}`;
   }
 
   function ConfirmCard(atts) {
@@ -1154,48 +1194,53 @@
   // ---- Timeline
   function Timeline() {
     const sched = schedule(S.tasks);
-    const DAYS = Array.from({ length: 10 }, (_, i) => i);
-    const COLS = "grid-template-columns:140px repeat(10,minmax(34px,1fr))";
+    const N = 10, DAYS = Array.from({ length: N }, (_, k) => k);
     const { own, related, link } = scopeTasks();
     const pool = [...own, ...related];
     const ms = scopeMilestones();
-    const slips = milestoneSlips(S.tasks, sched).filter((s) => ms.some((m) => m.id === s.milestone.id));
-    return `${ScopeBar()}
-    <div class="rounded-lg border border-line bg-white">
-      <div class="flex flex-wrap gap-1 px-3 pt-3">${slips.map((s) => Badge(`◆ ${s.milestone.id} ${s.slip ? `+${s.slip} d` : "✓"}`, s.slip ? "red" : "green", `title="${esc(s.milestone.name)}"`)).join("")}
-        <span class="ml-auto flex flex-wrap gap-1">${Badge("▨ delay", "amber")}${Badge("⛔", "blocked")}${Badge("⏰", "overdue")}${Badge("⚠ missing", "outline")}</span></div>
-      <div class="overflow-x-auto px-3 pb-3 pt-2"><div class="min-w-[520px]">
-        <div class="grid border-b-2 border-line pb-1 text-center text-[11px] font-semibold text-muted" style="${COLS}">
-          <div class="sticky left-0 bg-white"></div>
-          ${DAYS.map((d) => `<div class="${d === S.today ? "rounded-t-lg bg-accent text-white" : ""}"><div>${dayShort(d).wd}</div><div>${dayShort(d).date}</div></div>`).join("")}
+    const slips = milestoneSlips(S.tasks, sched).filter((x) => ms.some((m) => m.id === x.milestone.id));
+    const pct = (d) => (d / N) * 100;
+    const todayCol = `<span class="absolute inset-y-0 bg-accent/10" style="left:${pct(S.today)}%;width:${100 / N}%"></span>`;
+    const dayHead = `<div class="grid grid-cols-10 px-3 pb-2 pt-1 text-center">${DAYS.map((d) => {
+      const x = dayShort(d), on = d === S.today;
+      return `<div class="flex flex-col items-center leading-tight"><span class="text-[10px] uppercase ${on ? "font-semibold text-accent-dark" : "text-faint"}">${x.wd.slice(0, 2)}</span><span class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs ${on ? "bg-accent font-semibold text-white" : "text-ink"}">${x.date.split(".")[0]}</span></div>`;
+    }).join("")}</div>`;
+    const row = (t, team) => {
+      const sc = sched[t.id], od = isOverdue(t), lk = link[t.id], miss = missingCount(t);
+      const len = sc.ef - sc.es + 1, base = Math.min(len, t.duration), delay = Math.max(0, len - base);
+      const edge = t.status === "blocked" ? "outline outline-2 outline-ink" : od ? "outline outline-2 outline-bad" : "";
+      const meta = [od ? '<span class="text-bad">Overdue</span>' : "", t.status === "blocked" ? '<span class="text-ink">Blocked</span>' : "", miss ? `<span class="text-warn">${miss} missing</span>` : "", delay ? `<span class="text-warn">+${delay} d</span>` : "", `${t.crew} crew`].filter(Boolean).join(" · ");
+      return `<button onclick="A.openTask('${t.id}')" class="block w-full px-3 py-2 text-left hover:bg-canvas ${lk ? "opacity-50" : ""}" title="${lk ? esc(lk) : ""}">
+        <div class="flex items-baseline gap-2"><span class="min-w-0 flex-1 truncate text-[13px] font-medium ${t.status === "done" ? "text-faint line-through" : "text-ink"}">${esc(t.name)} ${esc(t.section)}${t.milestone ? ' <span class="text-warn">◆</span>' : ""}</span><span class="shrink-0 text-[11px] text-muted">${meta}</span></div>
+        <div class="relative mt-1.5 h-2.5 rounded-full bg-soft">${todayCol}
+          <span class="absolute inset-y-0 flex overflow-hidden rounded-full ${edge} ${t.status === "done" ? "opacity-40" : ""}" style="left:${pct(sc.es)}%;width:${(len / N) * 100}%">
+            <span class="h-full" style="width:${(base / len) * 100}%;background:${team.color}"></span>
+            ${delay ? `<span class="h-full flex-1" style="background:repeating-linear-gradient(45deg,#f59e0b,#f59e0b 3px,#fde68a 3px,#fde68a 6px)"></span>` : ""}
+          </span>
         </div>
-        ${TEAMS.filter((team) => pool.some((t) => t.team === team.id)).map((team) => `
-          <div class="border-b border-soft py-1">
-            <div class="flex items-center gap-2 py-1 text-xs font-bold"><span class="h-3 w-3 rounded-full" style="background:${team.color}"></span>${team.name}${S.persona === team.id ? Badge("you", "accent") : ""}</div>
-            ${pool.filter((t) => t.team === team.id).sort((a, b) => sched[a.id].es - sched[b.id].es).map((t) => {
-              const s = sched[t.id], od = isOverdue(t), lk = link[t.id];
-              return `<button onclick="A.openTask('${t.id}')" class="grid min-h-11 w-full items-center text-left hover:bg-canvas ${lk ? "opacity-50" : ""}" style="${COLS}" title="${lk ? esc(lk) : ""}">
-                <div class="sticky left-0 flex items-center gap-1 truncate bg-white pr-1 text-xs font-semibold"><span class="truncate ${t.status === "done" ? "text-faint line-through" : ""}">${lk ? "🔗 " : ""}${esc(t.name)} ${esc(t.section)}</span>${od ? "⏰" : ""}${missingCount(t) ? `<span class="text-warn">⚠${missingCount(t)}</span>` : ""}${t.milestone ? `<span class="text-warn">◆</span>` : ""}</div>
-                ${DAYS.map((d) => {
-                  const inBar = d >= s.es && d <= s.ef, first = d === s.es, last = d === s.ef;
-                  const isDelay = inBar && d > s.es + t.duration - 1 && t.delayDays > 0;
-                  const edge = t.status === "blocked" ? "#18181b" : od ? "#b91c1c" : null;
-                  const shadow = edge ? [`inset 0 3px 0 ${edge}`, `inset 0 -3px 0 ${edge}`, first ? `inset 3px 0 0 ${edge}` : "", last ? `inset -3px 0 0 ${edge}` : ""].filter(Boolean).join(",") : "none";
-                  return `<div class="relative h-9 ${d === S.today ? "bg-accent-tint" : ""}">
-                    ${inBar ? `<div class="absolute inset-y-1.5 ${first ? "left-1 rounded-l-full" : "left-0"} ${last ? "right-1 rounded-r-full" : "right-0"} ${t.status === "done" ? "opacity-40" : ""}" style="background:${isDelay ? "repeating-linear-gradient(45deg,#fcd34d,#fcd34d 4px,#fef3c7 4px,#fef3c7 8px)" : team.color};box-shadow:${shadow}"></div>` : ""}
-                    ${first && inBar ? `<span class="absolute inset-y-0 left-2.5 flex items-center text-[10px] font-bold text-white">👷${t.crew}</span>` : ""}
-                  </div>`;
-                }).join("")}
-              </button>`;
-            }).join("")}
-          </div>`).join("")}
-        <div class="grid pt-2 text-center text-xs" style="${COLS}"><div class="sticky left-0 bg-white text-left font-bold text-muted">◆</div>
-          ${DAYS.map((d) => `<div>${ms.filter((m) => m.targetDay === d).map((m) => `<span title="${esc(m.name)}" class="font-semibold text-warn">◆${m.id}</span>`).join("")}</div>`).join("")}</div>
-      </div></div>
-    </div>`;
+      </button>`;
+    };
+    return `${ScopeBar()}
+    ${slips.length ? `<div class="mb-2 flex gap-1.5 overflow-x-auto">${slips.map((x) => `<span class="flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ${x.slip ? "bg-bad-soft text-bad" : "bg-ok-soft text-ok"}">◆ ${esc(x.milestone.name.replace(/ complete$/, ""))} · ${x.slip ? `+${x.slip} d` : "on track"} · ${dayShort(x.milestone.targetDay).wd}</span>`).join("")}</div>` : ""}
+    <section class="overflow-hidden rounded-lg border border-line bg-white">
+      <div class="border-b border-soft bg-white">${dayHead}</div>
+      ${TEAMS.filter((team) => pool.some((t) => t.team === team.id)).map((team) => {
+        const list = pool.filter((t) => t.team === team.id).sort((a, b) => sched[a.id].es - sched[b.id].es);
+        return `<div class="border-b border-soft last:border-0">
+          <div class="flex items-center gap-2 bg-canvas px-3 py-1.5 text-xs font-semibold text-ink"><span class="h-2.5 w-2.5 rounded-full" style="background:${team.color}"></span>${team.name}<span class="font-normal text-faint">${list.length}</span>${S.persona === team.id ? '<span class="ml-auto rounded bg-accent-soft px-1.5 text-[10px] font-medium text-accent-dark">you</span>' : ""}</div>
+          <div class="divide-y divide-soft">${list.map((t) => row(t, team)).join("")}</div>
+        </div>`;
+      }).join("")}
+    </section>
+    <p class="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-muted">
+      <span class="flex items-center gap-1"><span class="inline-block h-2 w-4 rounded-full" style="background:repeating-linear-gradient(45deg,#f59e0b,#f59e0b 3px,#fde68a 3px,#fde68a 6px)"></span>Delay</span>
+      <span class="flex items-center gap-1"><span class="inline-block h-2 w-4 rounded-full bg-soft outline outline-2 outline-ink"></span>Blocked</span>
+      <span class="flex items-center gap-1"><span class="inline-block h-2 w-4 rounded-full bg-soft outline outline-2 outline-bad"></span>Overdue</span>
+      <span class="text-warn">◆ Milestone</span>
+    </p>`;
   }
 
-  // ---- Site view (drawn site plan + building by section and level)
+    // ---- Site view (drawn site plan + building by section and level)
   function SiteView() {
     const sched = schedule(S.tasks);
     const { own, related, link } = scopeTasks();

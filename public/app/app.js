@@ -36,7 +36,8 @@
     capture: { lang: "de-DE", text: "", attachments: [], draft: null, usedVoice: false, listening: false },
     demo: false, details: false, stepPick: null, attachMenu: null, contractPicker: null, preview: null, logModal: null,
     open: {}, last: null, edit: null, collapsed: {}, editMsg: {}, reportMenu: false,
-    logs: { q: "", filter: "all" }, scope: "all", site: { section: null },
+    logs: { q: "", filter: "all" }, scope: "all",
+    site: { section: null, mode: window.innerWidth >= 640 ? "3d" : "plan", floor: "all", cat: "all", team: "all", pulse: true, people: true },
     minutes: { open: false, text: "", res: null, keep: [] },
     email: { open: false, text: "" },
     setupPreview: null, editContact: null, ai: {}, drag: null,
@@ -45,6 +46,9 @@
   const render = () => {
     const scroll = window.scrollY;
     document.getElementById("app").innerHTML = Shell();
+    // The 3D site model keeps one WebGL canvas alive across re-renders (public/app/site3d.js).
+    const el3d = document.getElementById("site3d");
+    if (el3d && window.__site3d) window.Site3D?.mount(el3d, window.__site3d.model, window.__site3d.handlers);
     window.scrollTo(0, scroll);
   };
   const commit = () => { save(); render(); };
@@ -651,6 +655,9 @@
     week(d) { const cur = U.week ?? Math.floor(S.today / 5); U.week = Math.max(0, Math.min(1, cur + d)); render(); },
     siteSet(k) { U.site.section = k; render(); },
     siteSection(s) { U.site.section = U.site.section === s ? null : s; render(); },
+    siteMode(m) { U.site.mode = m; render(); },
+    site3d(k, v) { U.site[k] = v; render(); },
+    site3dReset() { window.Site3D?.reset(); },
 
     // setup
     project(k, v) { S.project[k] = v; save(); },
@@ -1394,7 +1401,18 @@
     }
     const dot = (c, l) => `<span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full" style="background:${c}"></span>${l}</span>`;
     const mapsUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(S.project.address)}`;
-    return `
+    const modeSwitch = `<div class="mb-3 flex gap-1 rounded-lg bg-soft p-1">${[["3d", "3D model"], ["plan", "Site plan"]].map(([k, l]) =>
+      `<button onclick="A.siteMode('${k}')" class="flex h-9 flex-1 items-center justify-center rounded-md text-sm ${U.site.mode === k ? "bg-white font-semibold text-ink shadow-sm" : "text-muted"}">${l}</button>`).join("")}</div>`;
+    const below = `
+      <div class="mt-4 flex gap-1 rounded-lg bg-soft p-1">${[null, ...keys].map((k) => {
+        const on = sel === k, lk = k ? look(stats(k)) : null;
+        return `<button onclick="A.siteSet(${k ? `'${k}'` : "null"})" class="relative flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md text-sm ${on ? "bg-white font-semibold text-ink shadow-sm" : "text-muted"}">
+          ${k === null ? "All" : k === "Site" ? "Access" : k}${lk?.dot ? `<span class="h-1.5 w-1.5 rounded-full" style="background:${lk.dot}"></span>` : ""}</button>`;
+      }).join("")}</div>
+      <div class="mt-3">${sel ? detail : list}</div>`;
+    if (U.site.mode === "3d") return modeSwitch + Site3DPanel(pool, sched, sections, sel) + below;
+    window.__site3d = null;
+    return `${modeSwitch}
       <section class="overflow-hidden rounded-lg border border-line bg-white">
         ${plan}
         <div class="flex items-center gap-2 border-t border-soft px-3 py-2">
@@ -1403,12 +1421,78 @@
         </div>
       </section>
       <div class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted">${dot(C.problem, "Problem or overdue")}${dot(C.delay, "Delay")}${dot(C.blocked, "Blocked")}</div>
-      <div class="mt-4 flex gap-1 rounded-lg bg-soft p-1">${[null, ...keys].map((k) => {
-        const on = sel === k, lk = k ? look(stats(k)) : null;
-        return `<button onclick="A.siteSet(${k ? `'${k}'` : "null"})" class="relative flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md text-sm ${on ? "bg-white font-semibold text-ink shadow-sm" : "text-muted"}">
-          ${k === null ? "All" : k === "Site" ? "Access" : k}${lk?.dot ? `<span class="h-1.5 w-1.5 rounded-full" style="background:${lk.dot}"></span>` : ""}</button>`;
-      }).join("")}</div>
-      <div class="mt-3">${sel ? detail : list}</div>`;
+      ${below}`;
+  }
+
+  // ---- 3D site model (Plan › Site › 3D): filters + the model drawn by public/app/site3d.js
+  const CAT3D = [["problem", "#dc2626", "Problem · act today"], ["delay", "#f59e0b", "Delayed"], ["blocked", "#3f3f46", "Blocked"],
+    ["progress", "#2563eb", "In progress"], ["planned", "#a1a1aa", "Planned"], ["done", "#16a34a", "Done"]];
+  const catOf = (t) => {
+    if (t.status === "done") return "done";
+    const hard = S.entries.some((e) => e.fields?.taskId === t.id && ["stoppage", "defect", "incident"].includes(e.type));
+    if (isOverdue(t) || hard || S.pending?.proposal?.triggerTaskId === t.id) return "problem";
+    if (t.delayDays > 0 || S.proposals.some((p) => p.status === "pending" && p.taskId === t.id)) return "delay";
+    if (t.status === "blocked") return "blocked";
+    return t.status === "in-progress" ? "progress" : "planned";
+  };
+  function Site3DPanel(pool, sched, sections, sel) {
+    const f = U.site;
+    const tasks = pool.map((t) => {
+      const team = TEAMS.find((x) => x.id === t.team) || { name: t.team, color: "#6d6e6f" };
+      const sc = sched[t.id];
+      const miss = missingCount(t);
+      return {
+        id: t.id, name: t.name, section: t.section || "", level: levelOf(t.name), team: t.team, teamColor: team.color, status: t.status,
+        cat: catOf(t), missing: miss, milestone: !!t.milestone, crew: t.crew,
+        label: `${t.name}${t.section ? ` ${t.section}` : ""}`,
+        sub: [`${team.name}`, `${dayLabel(sc.es)}${sc.ef > sc.es ? ` – ${dayLabel(sc.ef)}` : ""}`, miss ? `${miss} item${miss > 1 ? "s" : ""} missing` : "", t.milestone ? "milestone" : ""].filter(Boolean).join(" · "),
+      };
+    });
+    const order = ["Floor 3", "Floor 2", "Floor 1", "Ground", "Basement", "Foundation"];
+    const top = Math.min(...tasks.filter((t) => t.section).map((t) => order.indexOf(t.level)));
+    const floors = order.slice(Number.isFinite(top) ? top : 1);
+    const count = (k) => tasks.filter((t) => t.cat === k).length;
+    window.__site3d = {
+      model: { sections, tasks, floor: f.floor, cat: f.cat, team: f.team, pulse: f.pulse, people: f.people, selected: sel },
+      handlers: { openTask: (id) => A.openTask(id), selectSection: (s) => A.siteSet(U.site.section === s ? null : s) },
+    };
+    const radio = (key, val, label, on) => `<label class="flex min-h-8 cursor-pointer items-center gap-2 text-sm text-ink"><input type="radio" class="h-4 w-4 accent-[#f06a6a]" name="s3-${key}" ${on ? "checked" : ""} onchange="A.site3d('${key}','${val}')">${label}</label>`;
+    const check = (key, label) => `<label class="flex min-h-8 cursor-pointer items-center gap-2 text-sm text-ink"><input type="checkbox" class="h-4 w-4 accent-[#f06a6a]" ${f[key] ? "checked" : ""} onchange="A.site3d('${key}',this.checked)">${label}</label>`;
+    const head = (t) => `<p class="mb-1 mt-4 text-xs font-semibold uppercase tracking-wide text-muted first:mt-0">${t}</p>`;
+    const filters = `
+      <div class="rounded-lg border border-line bg-white p-4">
+        ${head("Floor")}
+        ${radio("floor", "all", "All floors", f.floor === "all")}
+        ${floors.map((l) => radio("floor", l, l === "Ground" ? "Ground floor" : l, f.floor === l)).join("")}
+        ${head("Status")}
+        ${radio("cat", "all", `All <span class="text-faint">(${tasks.length})</span>`, f.cat === "all")}
+        ${CAT3D.map(([k, , l]) => radio("cat", k, `${l} <span class="text-faint">(${count(k)})</span>`, f.cat === k)).join("")}
+        ${head("Team")}
+        <select class="h-10 w-full rounded-md border border-line bg-white px-2 text-sm" onchange="A.site3d('team', this.value)">
+          <option value="all">All teams</option>${TEAMS.map((t) => `<option value="${t.id}" ${f.team === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select>
+        <div class="mt-3 border-t border-soft pt-2">
+          ${check("pulse", "Pulse problems")}
+          ${check("people", "Show crews")}
+        </div>
+        <p class="mt-2 text-xs leading-relaxed text-muted">Crews are atmosphere: helmets in the team colour stand at running tasks; the site manager in white walks to the problems.</p>
+      </div>`;
+    const legend = `<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink">${CAT3D.map(([, c, l]) => `<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full" style="background:${c}"></span>${l}</span>`).join("")}
+      <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full border-2 border-[#f59e0b]"></span>Missing item</span>
+      <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rotate-45 bg-[#a1a1aa]"></span>Milestone</span></div>`;
+    const shown = tasks.filter((t) => (f.cat === "all" || t.cat === f.cat) && (f.team === "all" || t.team === f.team) && (!t.section || f.floor === "all" || order.indexOf(t.level) >= order.indexOf(f.floor))).length;
+    return `
+      <div class="grid gap-3 lg:grid-cols-[230px_1fr]">
+        <div class="order-2 lg:order-1">${filters}</div>
+        <div class="order-1 min-w-0 lg:order-2">
+          ${legend}
+          <p class="mt-1 text-xs text-muted">${f.floor === "all" ? "All floors" : f.floor}: ${shown} task(s) shown · drag to turn, scroll or pinch to zoom, click a pin for details</p>
+          <div class="relative mt-2 overflow-hidden rounded-lg border border-line bg-white">
+            <div id="site3d" class="h-[380px] w-full sm:h-[520px]"></div>
+            <button onclick="A.site3dReset()" class="absolute right-3 top-3 h-9 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink shadow-sm hover:bg-canvas">Reset view</button>
+          </div>
+          <p class="mt-1.5 text-[11px] text-faint">Building drawn from the plan: grey = built, yellow = formwork, purple = rebar, dashed = still to build. Click a section to list its tasks below.</p>
+        </div>
+      </div>`;
   }
 
   // ---- Library (Plan › More): every report, grouped by the person who added it

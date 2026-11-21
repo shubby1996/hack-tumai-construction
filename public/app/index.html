@@ -42,5 +42,8 @@
   <script src="/app/data.js"></script>
   <script src="/app/engine.js"></script>
   <script src="/app/app.js"></script>
+  <!-- 3D site model: three.js is vendored in /app/vendor (MIT), loaded as an ES module -->
+  <script type="importmap">{ "imports": { "three": "/app/vendor/three.module.min.js" } }</script>
+  <script type="module" src="/app/site3d.js"></script>
 </body>
 </html>

@@ -144,6 +144,8 @@
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
     chev: '<path d="m9 18 6-6-6-6"/>',
+    book: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
     stop: '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>',
   };
   const Ic = (name, cls = "h-5 w-5") => `<svg viewBox="0 0 24 24" class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] ?? ""}</svg>`;
@@ -262,7 +264,7 @@
     const sched0 = schedule(S.tasks);
     return p.mode === "extend" ? withDelay(S.tasks, p.taskId, p.days) : S.tasks.map((x) => (x.id === p.taskId ? { ...x, plannedStart: Math.max(x.plannedStart, sched0[x.id].es) + p.days } : x));
   }
-  function addNotice(n) { S.notices = [n, ...S.notices]; S.selectedNoticeId = n.id; }
+  function addNotice(n) { S.notices = [{ by: S.persona, ...n }, ...S.notices]; S.selectedNoticeId = n.id; }
   const fileToDataUrl = (f) => new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
   async function fileAttachment(f, kind) {
     const a = { id: uid("AT"), kind, name: f.name, size: f.size };
@@ -542,6 +544,9 @@
     toggleTodo(id) { S.todos = S.todos.map((t) => (t.id === id ? { ...t, status: t.status === "open" ? "done" : "open" } : t)); commit(); },
 
     // documents
+    libFilter(f) { U.libFilter = f; render(); },
+    libOpen(id) { U.libItem = id; render(); },
+    libNotice(id) { S.selectedNoticeId = id; U.planTab = "docs"; commit(); },
     selectNotice(id) { S.selectedNoticeId = id; commit(); },
     openNotice(id) { S.selectedNoticeId = id; save(); A.go("plan", "docs"); },
     noticeBody(id, v) { S.notices = S.notices.map((n) => (n.id === id && n.status === "draft" ? { ...n, body: v } : n)); save(); },
@@ -805,7 +810,7 @@
 
   // ================================================================== VIEW: shell (bottom bar Today · Record · Plan; slim left rail on desktop)
   const PLAN_TABS = [["timeline", "📅", "Timeline"], ["site", "🗺", "Site"]];
-  const MORE_TABS = [["list", "📋", "Task list"], ["notes", "📒", "Site notes"], ["docs", "📄", "Documents"], ["history", "🕘", "History"], ["setup", "⚙", "Setup"]];
+  const MORE_TABS = [["library", "book", "Library"], ["list", "minutes", "Task list"], ["notes", "pen", "Site notes"], ["docs", "file", "Documents"], ["history", "clock", "History"], ["setup", "gear", "Setup"]];
 
   const SAMPLE_EMAIL = "Von: Stahlhandel Müller\nBetreff: Lieferung Bewehrung Abschnitt C\n\nSehr geehrter Herr Bauer,\nleider können wir den Bewehrungsstahl für Abschnitt C (6,2 t) nicht wie geplant am Freitag liefern. Neuer Liefertermin ist Dienstag. Bitte bestätigen Sie uns kurz.\n\nMit freundlichen Grüßen\nStahlhandel Müller";
   function Shell() {
@@ -1124,12 +1129,15 @@
     </div>`;
   }
   function MoreMenu() {
-    return Modal("⋯ More", `<ul class="space-y-2">${MORE_TABS.map(([id, icon, label]) => `
-      <li><button onclick="A.planTab('${id}')" class="flex min-h-12 w-full items-center gap-3 rounded-md border px-3 text-left text-sm font-medium ${U.planTab === id ? "border-accent bg-accent-tint" : "border-line"}"><span class="text-xl">${icon}</span>${label}
-        ${id === "docs" && S.notices.some((n) => n.status === "draft") ? Badge(String(S.notices.filter((n) => n.status === "draft").length), "accent", 'style="margin-left:auto"') : ""}</button></li>`).join("")}</ul>`, "A.more(false)");
+    const drafts = S.notices.filter((n) => n.status === "draft").length;
+    return Modal("More", `<ul class="divide-y divide-soft overflow-hidden rounded-lg border border-line">${MORE_TABS.map(([id, icon, label]) => `
+      <li><button onclick="A.planTab('${id}')" class="flex h-12 w-full items-center gap-3 px-3 text-left text-sm ${U.planTab === id ? "bg-accent-tint font-medium text-ink" : "text-ink hover:bg-canvas"}">
+        <span class="text-muted">${Ic(icon, "h-[18px] w-[18px]")}</span><span class="flex-1">${label}</span>
+        ${id === "docs" && drafts ? `<span class="rounded-full bg-accent px-1.5 text-[11px] font-semibold text-white">${drafts}</span>` : ""}
+        <span class="text-faint">${Ic("chev", "h-4 w-4")}</span></button></li>`).join("")}</ul>`, "A.more(false)");
   }
   function Plan() {
-    return ({ timeline: Timeline, board: Board, site: SiteView, list: TaskList, notes: Notes, docs: Documents, history: History, setup: Setup })[U.planTab]();
+    return ({ timeline: Timeline, board: Board, site: SiteView, library: Library, list: TaskList, notes: Notes, docs: Documents, history: History, setup: Setup })[U.planTab]();
   }
 
   function ScopeBar() {
@@ -1336,6 +1344,46 @@
       </section>
       <div class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted">${dot(C.problem, "Problem or overdue")}${dot(C.delay, "Delay")}${dot(C.blocked, "Blocked")}</div>
       <div class="mt-4">${sel ? detail : `${SectionTitle("Sections")}${list}`}</div>`;
+  }
+
+  // ---- Library (Plan › More): every report, grouped by the person who added it
+  const ARCHIVE = [
+    { id: "AR1", by: "site-manager", kind: "report", title: "Bautagesbericht 23.11.2026", day: "Mon 23 Nov", status: "approved", body: "Wetter: bewölkt, 6 °C\nPersonal: 34\nErdbau: Aushub Fundament C begonnen (Abschnitt C)\nSchalung: Wände EG A fertig\nBesonderheiten: keine" },
+    { id: "AR2", by: "site-manager", kind: "letter", title: "Mängelanzeige · Abdichtung Keller A", day: "Fri 20 Nov", status: "approved", body: "An: Abdichtung Fischer GmbH\nBetreff: Mängelanzeige gem. § 4 Abs. 7 VOB/B\nAn der Kellerwand Achse A/2 ist die Abdichtung auf ca. 1,5 m nicht verklebt. Wir fordern Sie auf, den Mangel bis 27.11.2026 zu beseitigen." },
+    { id: "AR3", by: "earthworks", kind: "note", title: "Excavation started, section C", day: "Mon 23 Nov", status: "note", body: "Aushub Fundament C begonnen, 4 Mann, Bagger 14 t. Leitungsplan vom Bauherrn noch offen." },
+    { id: "AR4", by: "formwork", kind: "note", title: "Walls floor 2 A formwork closed", day: "Mon 23 Nov", status: "note", body: "Schalung Wände 2. OG Abschnitt A geschlossen, Abnahme durch Bauleitung morgen 8 Uhr." },
+    { id: "AR5", by: "rebar", kind: "note", title: "Partial rebar delivery", day: "Fri 20 Nov", status: "problem", body: "Nur 3,1 t von 6,2 t Bewehrung für Abschnitt C geliefert. Rest laut Lieferant nächste Woche." },
+    { id: "AR6", by: "concrete", kind: "note", title: "Pump booked for walls 2 A", day: "Fri 20 Nov", status: "note", body: "Betonpumpe für Do 26.11., 7 Uhr bestellt. Kranslot muss noch bestätigt werden." },
+  ];
+  function Library() {
+    const f = U.libFilter ?? "all";
+    const items = [
+      ...S.entries.map((e) => ({ id: e.id, by: e.author, kind: e.source === "minutes" ? "minutes" : "note", title: e.summary, day: dayLabel(e.day ?? S.today), status: isProblem(e) ? "problem" : "note", call: `A.openLog('${e.id}')` })),
+      ...S.notices.map((n) => ({ id: n.id, by: n.by ?? "site-manager", kind: n.type === "tagesbericht" ? "report" : "letter", title: n.title, day: dayLabel(S.today), status: n.status, call: `A.libNotice('${n.id}')` })),
+      ...ARCHIVE.map((a) => ({ ...a, call: `A.libOpen('${a.id}')` })),
+    ].filter((it) => f === "all" || (f === "notes" ? ["note", "minutes"].includes(it.kind) : f === "letters" ? it.kind === "letter" : it.kind === "report"));
+    const ICON = { note: "mic", minutes: "minutes", letter: "file", report: "book" };
+    const KIND = { note: "Site note", minutes: "Minutes", letter: "Letter", report: "Daily report" };
+    const STATUS = { draft: '<span class="text-warn">Draft</span>', approved: '<span class="text-ok">Approved</span>', problem: '<span class="text-bad">Problem</span>', note: "" };
+    const people = PERSONAS.filter((p) => items.some((it) => it.by === p.id));
+    const others = items.filter((it) => !PERSONAS.some((p) => p.id === it.by));
+    const group = (id, name, role, list) => `
+      <section class="mt-4">
+        <div class="mb-1.5 flex items-center gap-2 px-0.5">${Avatar(id, name, 24)}<span class="text-[15px] font-semibold text-ink">${esc(name)}</span><span class="truncate text-xs text-muted">${esc(role)}</span><span class="ml-auto text-xs text-faint">${list.length}</span></div>
+        <ul class="divide-y divide-soft overflow-hidden rounded-lg border border-line bg-white">${list.map((it) => `
+          <li><button onclick="${it.call}" class="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-canvas">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${it.status === "problem" ? "bg-bad-soft text-bad" : "bg-soft text-muted"}">${Ic(ICON[it.kind], "h-4 w-4")}</span>
+            <span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-ink">${esc(it.title)}</span><span class="block truncate text-xs text-muted">${[KIND[it.kind], esc(it.day), STATUS[it.status] ?? ""].filter(Boolean).join(" · ")}</span></span>
+            <span class="text-faint">${Ic("chev", "h-4 w-4")}</span>
+          </button></li>`).join("")}</ul>
+      </section>`;
+    const open = ARCHIVE.find((a) => a.id === U.libItem);
+    return `
+      <div class="flex gap-1.5 overflow-x-auto">${[["all", "All"], ["notes", "Site notes"], ["letters", "Letters"], ["reports", "Daily reports"]].map(([k, l]) => chipBtn(l, `A.libFilter('${k}')`, f === k)).join("")}</div>
+      ${people.map((p) => group(p.id, p.name, p.role.split(" (")[0], items.filter((it) => it.by === p.id))).join("")}
+      ${others.length ? group("x", "Others", "", others) : ""}
+      ${items.length ? "" : `<p class="mt-4 rounded-lg border border-line bg-white px-4 py-6 text-center text-sm text-muted">Nothing here yet</p>`}
+      ${open ? Modal(esc(open.title), `<p class="mb-2 text-xs text-muted">${esc(personaName(open.by))} · ${esc(open.day)}</p><p class="whitespace-pre-line rounded-md bg-canvas p-3 font-mono text-[13px] leading-relaxed text-ink">${esc(open.body)}</p>`, "A.libOpen(null)") : ""}`;
   }
 
   // ---- Task drawer

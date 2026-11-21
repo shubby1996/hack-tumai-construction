@@ -1,5 +1,8 @@
 # Cats Track – AI site assistant (Tum.ai Construction Hack, Challenge B)
 
+> **v0.8 – new UI.** The homepage now runs the Cats Track mobile UI from `public/app/` (Today · Record · Plan, Needs you, confirmation card, Library, Site plan), wired to the same AI routes (`/api/extract`, `/api/vision`, `/api/minutes`, `/api/summary`) with the built-in rules as fallback. The earlier React UI is still at `/classic`. Edit the UI in `public/app/app.js` (screens), `data.js` (seed) and `engine.js` (plan logic); `next.config.ts` rewrites `/` to `public/app/index.html`.
+
+
 One shared two-week plan for the whole site. Every subcontractor updates their own tasks by voice from the site.
 The assistant **flags blockers before they bite** (preventive), **proposes a re-plan when something breaks** (reactive),
 and **drafts every notice and report** (VOB/B). The site manager approves re-plans and outgoing documents.

@@ -284,6 +284,19 @@
     return o;
   }
 
+  async function api(path, body, ms = 20000) {
+    if (!/^https?:/.test(location.protocol)) return null;
+    try {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms);
+      const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: ctl.signal });
+      clearTimeout(t);
+      if (!res.ok) return null;
+      const out = await res.json();
+      return out && !out.error ? out : null;
+    } catch { return null; }
+  }
+  const openTasks = () => S.tasks.filter((t) => t.status !== "done").map(({ id, name, team, section }) => ({ id, name, team, section }));
+
   const A = {
     // navigation
     go(view, tab) { U.view = view; if (tab) U.planTab = tab; U.moreOpen = false; U.profileOpen = false; U.site.section = null; render(); window.scrollTo({ top: 0 }); },
@@ -308,7 +321,13 @@
       input.value = "";
       U.attachMenu = null;
       if (!f) return render();
-      if (kind === "photo") U.capture.attachments.push({ id: uid("AT"), kind, name: f.name, url: await downscale(f), vision: "off" });
+      if (kind === "photo") {
+        const a = { id: uid("AT"), kind, name: f.name, url: await downscale(f), vision: "analysing" };
+        U.capture.attachments.push(a); U.view = "record"; render();
+        const v = await api("/api/vision", { image: a.url, context: U.capture.text });
+        a.vision = v ? "done" : "off";
+        if (v) a.note = [v.caption, ...(v.findings ?? []).map((x) => `Finding: ${x}`), v.textInImage ? `Text in photo: ${v.textInImage}` : ""].filter(Boolean).join(" ");
+      }
       else {
         const a = await fileAttachment(f, kind);
         if (kind === "contract") { S.siteDocs = [{ name: f.name, kind: "Contract", note: "Uploaded from a note", url: a.url }, ...S.siteDocs]; U.contractPicker = null; save(); }
@@ -354,15 +373,20 @@
       try { rec.start(); } catch { U.capture.listening = false; }
       render();
     },
-    structure(auto) {
+    async structure(auto) {
       const c = U.capture;
       if (!c.text.trim() && !c.attachments.length) return auto ? render() : toast("Say or type what happened");
-      const open = S.tasks.filter((t) => t.status !== "done").map(({ id, name, team, section }) => ({ id, name, team, section }));
-      const d = SF.fillSteps(SF.extractWithRules(c.text, open, me().team, S.today), c.text, S.today, S.tasks);
-      if (!c.text.trim()) d.summary = `Photo note${me().team ? "" : ""}`;
+      if (c.sorting) return;
+      const photoNotes = c.attachments.filter((a) => a.kind === "photo" && a.note).map((a) => a.note);
+      c.sorting = true; render();
+      const ai = await api("/api/extract", { text: c.text, photoNotes, speaker: `${me().name}, ${me().role}`, personaTeam: me().team, today: S.today, tasks: openTasks() });
+      const base = ai && ai.type ? ai : SF.extractWithRules(c.text || photoNotes.join(" "), openTasks(), me().team, S.today);
+      const d = SF.fillSteps({ ...base, fields: base.fields ?? {}, missing: base.missing ?? [], nextSteps: base.nextSteps ?? [] }, c.text, S.today, S.tasks);
+      if (!c.text.trim() && !photoNotes.length) d.summary = "Photo note";
       // Max ONE follow-up question, picked once.
       d.ask = d.type === "stoppage" && d.missing.includes("estimatedDelayDays") ? "delay"
         : d.missing.includes("responsibleParty") ? "responsible" : d.missing.includes("taskId") ? "task" : null;
+      c.sorting = false;
       c.draft = d;
       U.details = false; U.stepPick = null;
       render();
@@ -578,7 +602,13 @@
       w.document.write(`<pre style="font:13px/1.5 ui-monospace,monospace;white-space:pre-wrap;padding:32px">${esc(n.body)}</pre>`);
       w.document.close(); w.print();
     },
-    summarise() { U.ai = { text: summaryFacts(), note: "mock · the app rephrases this with the open model" }; U.reportMenu = false; render(); },
+    async summarise() {
+      const facts = summaryFacts();
+      U.ai = { text: "Summarising…", note: "" }; U.reportMenu = false; render();
+      const ai = await api("/api/summary", { facts });
+      U.ai = ai?.summary ? { text: ai.summary, note: `AI · ${ai.model ?? "open model"}` } : { text: facts, note: "built-in rules" };
+      render();
+    },
 
     // site notes
     logFilter(v) { U.logs.filter = v; render(); },
@@ -594,9 +624,13 @@
     },
     minutesOpen(o) { U.minutes = { open: o, text: "", res: null, keep: [] }; render(); },
     minutesSample() { U.minutes.text = SAMPLE_MINUTES; render(); },
-    minutesSplit() {
-      const items = SF.minutesWithRules(U.minutes.text, S.tasks.map(({ id, name, team, section }) => ({ id, name, team, section })), S.today);
-      U.minutes.res = { items, engine: "rules" };
+    async minutesSplit() {
+      const tasks = S.tasks.map(({ id, name, team, section }) => ({ id, name, team, section }));
+      U.minutes.busy = true; render();
+      const ai = await api("/api/minutes", { text: U.minutes.text, today: S.today, tasks });
+      const items = ai?.items?.length ? ai.items : SF.minutesWithRules(U.minutes.text, tasks, S.today);
+      U.minutes.busy = false;
+      U.minutes.res = { items, engine: ai?.engine ?? "rules" };
       U.minutes.keep = items.map(() => true);
       render();
     },
@@ -1039,7 +1073,7 @@
             </div>
           </div>
           <div class="mt-4 flex h-8 items-end gap-1">${wave.map((h, k) => `<span class="w-1 rounded-full ${c.listening ? "animate-pulse bg-accent" : "bg-line"}" style="height:${c.listening ? h : Math.max(4, h / 3)}px;animation-delay:${k * 90}ms"></span>`).join("")}</div>
-          <p class="mt-2 text-sm font-medium text-ink">${c.listening ? "Listening…" : "Tap to speak"}</p>
+          <p class="mt-2 text-sm font-medium text-ink">${c.sorting ? "Sorting…" : c.listening ? "Listening…" : "Tap to speak"}</p>
           <p class="text-xs text-muted">${c.listening ? "Tap again to stop. It sorts itself." : "Stop when you're done. It sorts itself."}</p>
           ${atts ? `<div class="mt-3 w-full">${atts}</div>` : ""}
         </div>

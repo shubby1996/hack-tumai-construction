@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#18181b">
   <title>Cats Track</title>
   <link rel="icon" href="/icon.svg">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icon.svg">
   <!-- Tailwind via CDN (needs internet). Design tokens below: edit them to restyle the whole mock.
        In the real app (Tailwind 4) they become @theme variables in src/app/globals.css. -->
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -37,8 +39,8 @@
 </head>
 <body>
   <div id="app"><p style="padding:2rem;color:#3f3f46">Loading…</p></div>
-  <script src="data.js"></script>
-  <script src="engine.js"></script>
-  <script src="app.js"></script>
+  <script src="/app/data.js"></script>
+  <script src="/app/engine.js"></script>
+  <script src="/app/app.js"></script>
 </body>
 </html>

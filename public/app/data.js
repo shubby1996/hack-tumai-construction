@@ -1,4 +1,4 @@
-// SiteFlow mock – seed data. Edit freely: everything the screens show starts here.
+// Cats Track mock – seed data. Edit freely: everything the screens show starts here.
 // Mirrors src/lib/seed.ts. After editing, click "Reset demo" in the sidebar (state is kept in localStorage).
 
 window.SF = window.SF || {};

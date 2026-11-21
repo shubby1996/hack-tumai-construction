@@ -41,7 +41,7 @@ export function Setup({ toast }: { toast: (m: string) => void }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-[#e8e6e3] bg-white p-3 text-sm text-[#4b4c4e]">
-        A site is set up once, before work starts: project data, the schedule from MS Project or Excel, the plans and the contract, and the people involved. SiteFlow builds the
+        A site is set up once, before work starts: project data, the schedule from MS Project or Excel, the plans and the contract, and the people involved. Cats Track builds the
         first two-week plan from this; afterwards the site team works with it day to day.
       </div>
       <div className="grid gap-4 lg:grid-cols-2">

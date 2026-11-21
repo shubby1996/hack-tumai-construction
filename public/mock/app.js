@@ -1281,32 +1281,55 @@
     const metaOf = (st) => [`${st.open} open`, st.problem ? `<span class="text-bad">${st.problem} problem${st.problem > 1 ? "s" : ""}</span>` : "", st.overdue ? `<span class="text-bad">${st.overdue} overdue</span>` : "",
       st.blocked ? `<span class="text-ink">${st.blocked} blocked</span>` : "", st.delay ? `<span class="text-warn">${st.delay} delayed</span>` : "", st.missing ? `${st.missing} missing item${st.missing > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
 
-    // ---- drawn site plan
-    const W = 360, H = 210, bx = 56, bw = 248, by = 34, bh = 92;
+    // ---- drawn site plan: building sections on the left, site facilities on the right
+    const W = 360, H = 232, bx = 22, bw = 222, by = 26, bh = 122;
     const sw = sections.length ? bw / sections.length : bw;
-    const badge = (x, y, n, color) => n ? `<g><circle cx="${x}" cy="${y}" r="9" fill="${color}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y + 3.5}" font-size="10" font-weight="600" text-anchor="middle" fill="#fff">${n}</text></g>` : "";
+    const badge = (x, y, n, color) => n ? `<g><circle cx="${x}" cy="${y}" r="8.5" fill="${color}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y + 3.3}" font-size="9.5" font-weight="600" text-anchor="middle" fill="#fff">${n}</text></g>` : "";
     const site = stats("Site"), siteLook = look(site);
+    const label = (x, y, t, anchor = "middle") => `<text x="${x}" y="${y}" font-size="8.5" text-anchor="${anchor}" fill="#8a8d90" letter-spacing=".2">${t}</text>`;
     const plan = `
       <svg viewBox="0 0 ${W} ${H}" class="block w-full" role="img" aria-label="Site plan">
-        <defs><pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#e4e4e4"/></pattern></defs>
-        <rect width="${W}" height="${H}" fill="#fbfbfb"/><rect width="${W}" height="${H - 34}" fill="url(#dots)"/>
-        <rect x="24" y="16" width="${W - 48}" height="${H - 62}" rx="10" fill="none" stroke="#d4d4d4" stroke-dasharray="5 4"/>
+        <defs>
+          <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="#e6e6e6"/></pattern>
+          <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f4f4f4"/><line x1="0" y1="0" x2="0" y2="6" stroke="#e2e2e2" stroke-width="2"/></pattern>
+        </defs>
+        <rect width="${W}" height="${H}" fill="#fbfbfb"/><rect width="${W}" height="${H - 36}" fill="url(#dots)"/>
+        <path d="M128 ${H - 36} H22 a10 10 0 0 1 -10 -10 V22 a10 10 0 0 1 10 -10 H338 a10 10 0 0 1 10 10 V${H - 46} a10 10 0 0 1 -10 10 H164" fill="none" stroke="#cfcfcf" stroke-dasharray="5 4"/>
+
         ${sections.map((sec, k) => { const st = stats(sec), lk = look(st), x = bx + k * sw, on = sel === sec;
-          return `<g onclick="A.siteSection('${sec}')" style="cursor:pointer">
+          return `<g onclick="A.siteSet('${sec}')" style="cursor:pointer">
             <rect x="${x + 2}" y="${by}" width="${sw - 4}" height="${bh}" rx="8" fill="${lk.fill}" stroke="${on ? "#f06a6a" : lk.stroke}" stroke-width="${on ? 2.5 : 1.25}"/>
-            <text x="${x + sw / 2}" y="${by + bh / 2 + 2}" font-size="22" font-weight="600" text-anchor="middle" fill="#1e1f21">${sec}</text>
-            <text x="${x + sw / 2}" y="${by + bh / 2 + 20}" font-size="10" text-anchor="middle" fill="#6d6e6f">${st.open} open</text>
-            ${badge(x + sw - 12, by + 10, flags(st), lk.dot || "#6d6e6f")}
+            <text x="${x + sw / 2}" y="${by + bh / 2 - 2}" font-size="24" font-weight="600" text-anchor="middle" fill="#1e1f21">${sec}</text>
+            <text x="${x + sw / 2}" y="${by + bh / 2 + 16}" font-size="9.5" text-anchor="middle" fill="#6d6e6f">${st.open} open</text>
+            ${badge(x + sw - 12, by + 11, flags(st), lk.dot || "#6d6e6f")}
           </g>`; }).join("")}
-        <g onclick="A.siteSection('Site')" style="cursor:pointer">
-          <rect x="162" y="${by + bh + 6}" width="36" height="${H - 34 - (by + bh + 6)}" rx="3" fill="${sel === "Site" ? "#fde3e3" : "#efefef"}"/>
-          <text x="180" y="${by + bh + 26}" font-size="9" text-anchor="middle" fill="#6d6e6f">Access</text>
-          ${badge(196, by + bh + 12, flags(site), siteLook.dot || "#6d6e6f")}
+        ${label(bx + bw / 2, by + bh + 14, "BUILDING · HAUS 2")}
+
+        <g aria-label="Crane">
+          <circle cx="300" cy="62" r="38" fill="#f06a6a" fill-opacity=".05" stroke="#f3b0b0" stroke-dasharray="3 3"/>
+          <line x1="300" y1="62" x2="330" y2="40" stroke="#9ca0a4" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="294" y="56" width="12" height="12" rx="2" fill="#6d6e6f"/>
+          ${label(300, 114, "CRANE")}
         </g>
-        <g transform="translate(${W - 34},26)"><path d="M0 10 L5 -2 L10 10 L5 7 Z" fill="#9ca0a4"/><text x="5" y="22" font-size="9" text-anchor="middle" fill="#9ca0a4">N</text></g>
-        <rect x="0" y="${H - 34}" width="${W}" height="34" fill="#ececec"/>
-        <line x1="0" x2="${W}" y1="${H - 17}" y2="${H - 17}" stroke="#fff" stroke-width="2" stroke-dasharray="10 8"/>
-        <text x="14" y="${H - 21}" font-size="9" fill="#6d6e6f">${esc(S.project.address.split(",")[0])}</text>
+        <g aria-label="Storage">
+          <rect x="258" y="124" width="80" height="26" rx="4" fill="url(#hatch)" stroke="#dcdcdc"/>
+          ${label(298, 140, "STORAGE")}
+        </g>
+        <g aria-label="Site office">
+          <rect x="258" y="156" width="38" height="20" rx="3" fill="#ffffff" stroke="#d4d4d4"/><rect x="300" y="156" width="38" height="20" rx="3" fill="#ffffff" stroke="#d4d4d4"/>
+          ${label(298, 169, "OFFICE")}
+        </g>
+
+        <g onclick="A.siteSet('Site')" style="cursor:pointer">
+          <rect x="128" y="${by + bh + 20}" width="36" height="${H - 36 - (by + bh + 20)}" rx="3" fill="${sel === "Site" ? "#fde3e3" : "#ececec"}" stroke="${sel === "Site" ? "#f06a6a" : "none"}"/>
+          ${label(146, by + bh + 36, "ACCESS")}
+          ${badge(160, by + bh + 22, flags(site), siteLook.dot || "#6d6e6f")}
+        </g>
+
+        <rect x="0" y="${H - 36}" width="${W}" height="36" fill="#ececec"/>
+        <line x1="0" x2="${W}" y1="${H - 18}" y2="${H - 18}" stroke="#fff" stroke-width="2" stroke-dasharray="10 8"/>
+        <text x="14" y="${H - 23}" font-size="9" fill="#6d6e6f">${esc(S.project.address.split(",")[0])}</text>
+        <g transform="translate(${W - 24},${H - 30})"><path d="M0 10 L5 -2 L10 10 L5 7 Z" fill="#9ca0a4"/><text x="5" y="21" font-size="8" text-anchor="middle" fill="#9ca0a4">N</text></g>
       </svg>`;
 
     // ---- section list (or the selected section's levels, tasks and notes)

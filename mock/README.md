@@ -8,11 +8,11 @@ A no-build, clickable copy of the whole app, used to try out UX changes before t
 
 | Area | What's there |
 | --- | --- |
-| ☀ **Today** | Record + 📎 Attach · **Needs you (N)**: one list of everything waiting for you (re-plans, plan changes, letters to draft or approve, updates to send, coming-up risks, to-dos, updates from others) · milestone strip · my tasks · 📄 Day report |
+| ✓ **Today** | Record + 📎 Attach · **Needs you (N)**: one list of everything waiting for you (re-plans, plan changes, letters to draft or approve, updates to send, coming-up risks, to-dos, updates from others) · milestone strip · my tasks · 📄 Day report |
 | 🎙 **Record** | The big middle button. Speak, stop, and it sorts itself into one confirmation card; typed text is sorted on ↵. All fields sit under *Edit details* |
 | 🗺 **Plan** | Timeline · Site, plus ⋯ More: Library (all reports, grouped by who added them), Task list, Site notes, Documents, History, Setup |
 
-Switch person and reset the demo from the avatar (profile menu).
+The app opens on Record. Switch person and reset the demo from the avatar (profile menu).
 
 ## Demo script (≈ 5 min)
 

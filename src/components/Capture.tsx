@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useSpeech } from "@/lib/useSpeech";
 import { useStore } from "@/lib/store";
 import { PERSONAS, SAMPLE_PHRASES } from "@/lib/seed";
-import type { ExtractResult } from "@/lib/extract-rules";
-import type { DiaryEntry, EntryFields, EntryType } from "@/lib/types";
+import type { DraftStep, ExtractResult } from "@/lib/extract-rules";
+import type { DiaryEntry, EntryFields, EntryType, NextStepKind } from "@/lib/types";
+import { clock, dayLabel } from "@/lib/dates";
 import { Badge, Button, Card, Field, inputCls } from "./ui";
 
 const newEntryId = () => `E-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
@@ -19,6 +20,13 @@ interface Photo {
 }
 
 const TYPES: EntryType[] = ["stoppage", "delivery", "defect", "incident", "meeting", "attendance", "progress", "instruction", "note"];
+const KINDS: { id: NextStepKind; label: string }[] = [
+  { id: "task", label: "To-do" },
+  { id: "notify", label: "Inform" },
+  { id: "contact", label: "Contact" },
+  { id: "remind", label: "Remind me" },
+  { id: "other", label: "Other" },
+];
 const PARTIES = ["Client (Bauherr)", "Own company", "Supplier", "Weather", "Other subcontractor"];
 
 async function downscale(file: File, max = 900): Promise<string> {
@@ -35,7 +43,7 @@ async function downscale(file: File, max = 900): Promise<string> {
 }
 
 export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
-  const { persona, tasks, today } = useStore();
+  const { persona, tasks, today, contacts } = useStore();
   const addEntry = useStore((s) => s.addEntry);
   const [lang, setLang] = useState<"de-DE" | "en-US">("de-DE");
   const speech = useSpeech(lang);
@@ -43,6 +51,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<ExtractResult | null>(null);
+  const [usedVoice, setUsedVoice] = useState(false);
   const me = PERSONAS.find((p) => p.id === persona)!;
 
   // Live transcript into the text box while dictating.
@@ -87,6 +96,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
           photoNotes,
           speaker: `${me.name}, ${me.role}`,
           personaTeam: me.team,
+          today,
           tasks: tasks.filter((t) => t.status !== "done").map(({ id, name, team, section }) => ({ id, name, team, section })),
         }),
       });
@@ -102,6 +112,15 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
     setDraft({ ...draft, fields: { ...draft.fields, [k]: v }, missing });
   }
 
+  const steps = draft?.nextSteps ?? [];
+  function setSteps(next: DraftStep[]) {
+    if (draft) setDraft({ ...draft, nextSteps: next });
+  }
+  function setLocation(v: string) {
+    if (!draft) return;
+    setDraft({ ...draft, location: v || undefined, missing: v ? draft.missing.filter((m) => m !== "location") : draft.missing });
+  }
+
   function save() {
     if (!draft) return;
     const entry: DiaryEntry = {
@@ -115,6 +134,10 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
       fields: draft.fields,
       photos: photos.map((p) => p.url),
       photoNotes,
+      location: draft.location,
+      state: draft.state ?? draft.summary,
+      nextSteps: steps.filter((st) => st.text.trim()).map((st, i) => ({ ...st, id: `${Date.now().toString(36)}-${i}` })),
+      source: usedVoice ? "voice" : text.trim() ? "text" : "photo",
       engine: draft.engine,
       model: draft.model,
     };
@@ -123,10 +146,11 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
     setDraft(null);
     setText("");
     setPhotos([]);
+    setUsedVoice(false);
   }
 
   const samples = SAMPLE_PHRASES.filter((s) => persona === "site-manager" || s.persona === persona || s.persona === "site-manager");
-  const missingLabel = (m: string) => ({ startTime: "start time", responsibleParty: "who is responsible", estimatedDelayDays: "expected delay", taskId: "task", cause: "cause", location: "location", material: "material", quantity: "quantity" })[m] ?? m;
+  const missingLabel = (m: string) => ({ startTime: "start time", responsibleParty: "who is responsible", estimatedDelayDays: "expected delay", taskId: "task", cause: "cause", location: "where exactly", material: "material", quantity: "quantity" })[m] ?? m;
 
   return (
     <Card
@@ -145,7 +169,13 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
         <div className="space-y-3">
           <div className="flex items-start gap-3">
             <button
-              onClick={() => (speech.listening ? speech.stop() : speech.start())}
+              onClick={() => {
+                if (speech.listening) speech.stop();
+                else {
+                  setUsedVoice(true);
+                  speech.start();
+                }
+              }}
               disabled={!speech.supported}
               title={speech.supported ? "Dictate" : "Speech input needs Chrome, Edge or Safari"}
               className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl shadow-md transition active:scale-95 ${speech.listening ? "animate-pulse bg-red-600 text-white" : "bg-[#ef6b62] text-white hover:bg-[#e2564d]"} disabled:bg-stone-200 disabled:text-stone-400`}
@@ -261,7 +291,88 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-3 rounded-xl border border-stone-200 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Log</p>
+              <span className="text-xs text-stone-500">
+                🕒 {dayLabel(today)}, {clock(nowIso())} · {me.name}
+                {photos.length ? ` · 📷 ${photos.length}` : ""}
+              </span>
+            </div>
+            <Field label="Location">
+              <input
+                className={`${inputCls} ${draft.missing.includes("location") ? "border-amber-400 bg-amber-50" : ""}`}
+                placeholder="Building, floor, room or section"
+                value={draft.location ?? ""}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </Field>
+            <Field label="Current state">
+              <textarea className={`${inputCls} min-h-14`} rows={2} value={draft.state ?? draft.summary} onChange={(e) => setDraft({ ...draft, state: e.target.value })} />
+            </Field>
+            <div>
+              <p className="mb-1 text-xs font-medium text-stone-600">Next steps</p>
+              <ul className="space-y-2">
+                {steps.map((st, i) => (
+                  <li key={i} className="rounded-lg bg-stone-50 p-2" data-testid="next-step">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <select className={`${inputCls} w-auto! py-1 text-xs`} value={st.kind} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, kind: e.target.value as NextStepKind, source: "user" } : x)))}>
+                        {KINDS.map((k) => (
+                          <option key={k.id} value={k.id}>
+                            {k.label}
+                          </option>
+                        ))}
+                      </select>
+                      <select className={`${inputCls} w-auto! py-1 text-xs`} value={st.who ?? ""} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, who: e.target.value || undefined, source: "user" } : x)))}>
+                        <option value="">Who?</option>
+                        {contacts.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} · {c.role.split(" (")[0]}
+                          </option>
+                        ))}
+                      </select>
+                      <select className={`${inputCls} w-auto! py-1 text-xs`} value={st.dueDay ?? ""} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, dueDay: e.target.value === "" ? undefined : Number(e.target.value), source: "user" } : x)))}>
+                        <option value="">No date</option>
+                        {st.dueDay !== undefined && st.dueDay > today + 9 && <option value={st.dueDay}>{dayLabel(st.dueDay)}</option>}
+                        {Array.from({ length: 10 }, (_, d) => today + d).map((d) => (
+                          <option key={d} value={d}>
+                            {d === today ? "Today" : dayLabel(d)}
+                          </option>
+                        ))}
+                      </select>
+                      {st.source === "user" && <Badge tone="amber">your instruction</Badge>}
+                      <button className="ml-auto text-xs text-stone-400 hover:text-red-600" onClick={() => setSteps(steps.filter((_, j) => j !== i))} aria-label="Remove step">
+                        ✕
+                      </button>
+                    </div>
+                    <input className={`${inputCls} mt-1.5`} value={st.text} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} />
+                  </li>
+                ))}
+              </ul>
+              <button className="mt-1.5 text-xs font-medium text-[#ef6b62] hover:underline" onClick={() => setSteps([...steps, { kind: "task", text: "", who: "site-manager", source: "user" }])}>
+                + Add next step
+              </button>
+            </div>
+            {(() => {
+              const ext = steps.filter((st) => (st.kind === "notify" || st.kind === "contact" || st.kind === "task") && contacts.find((c) => c.id === st.who && !c.usesApp));
+              const t = tasks.find((x) => x.id === draft.fields.taskId);
+              const delay = Number(draft.fields.estimatedDelayDays ?? 0);
+              return (
+                <div className="space-y-1 text-xs">
+                  {ext.length > 0 && <p className="text-stone-600">✉ {ext.length} ready-to-send message(s) will be prepared for {Array.from(new Set(ext.map((st) => contacts.find((c) => c.id === st.who)!.name))).join(", ")}.</p>}
+                  {t && delay > 0 && draft.type !== "stoppage" && (
+                    <p className="text-stone-600">
+                      📅 Proposes moving <b>{t.name} {t.section}</b> by {delay} day(s) – the site manager accepts before the plan changes.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          <details className="rounded-xl border border-stone-200 p-3" open={draft.missing.some((m) => m !== "location") || draft.type === "stoppage"}>
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-stone-500">Classification & details</summary>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Type">
               <select className={inputCls} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as EntryType })}>
                 {TYPES.map((t) => (
@@ -284,7 +395,7 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
                 <input className={inputCls} value={draft.summary} onChange={(e) => setDraft({ ...draft, summary: e.target.value })} />
               </Field>
             </div>
-            {(["cause", "responsibleParty", "startTime", "estimatedDelayDays", "location", "material", "quantity"] as const)
+            {(["cause", "responsibleParty", "startTime", "estimatedDelayDays", "material", "quantity"] as const)
               .filter((k) => draft.fields[k] !== undefined || draft.missing.includes(k) || (draft.type === "stoppage" && ["cause", "responsibleParty", "startTime", "estimatedDelayDays"].includes(k)))
               .map((k) => (
                 <Field key={k} label={missingLabel(k).replace(/^\w/, (c) => c.toUpperCase())}>
@@ -298,9 +409,10 @@ export function Capture({ onSaved }: { onSaved: (entry: DiaryEntry) => void }) {
                 </Field>
               ))}
           </div>
+          </details>
           <div className="sticky bottom-16 flex gap-2 bg-white/95 py-2 sm:static sm:bottom-auto sm:py-0">
             <Button variant="primary" onClick={save} className="flex-1 sm:flex-none">
-              Save to site diary
+              Save log
             </Button>
             <Button variant="ghost" onClick={() => setDraft(null)}>
               Back

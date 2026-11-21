@@ -2,7 +2,7 @@
 // a two-week lookahead plan with four subcontractor teams.
 // All names and figures are fictional.
 
-import type { Milestone, Persona, Settings, Task, Team } from "./types";
+import type { Contact, Milestone, Persona, Settings, Task, Team } from "./types";
 
 export const PROJECT = {
   name: "Wohnanlage Lindenhof, Haus 2",
@@ -91,4 +91,37 @@ export const SAMPLE_PHRASES: { label: string; persona: string; text: string }[] 
   { label: "Wrong steel delivered", persona: "rebar", text: "Stahllieferung für Abschnitt C angekommen, 2 Tonnen falscher Durchmesser, 12 statt 16 Millimeter." },
   { label: "Crack in wall", persona: "site-manager", text: "Riss in der Wand Abschnitt A, zweites Obergeschoss, Nacharbeit durch Betonbau Schmid nötig." },
   { label: "Walls done", persona: "formwork", text: "Schalung Wände zweites OG Abschnitt A fertig." },
+  { label: "Rebar 2 days late", persona: "site-manager", text: "Herr Kaya von Bewehrung Kraus ruft an: Bewehrung Decke zweites OG Abschnitt A kommt 2 Tage später, Stahl fehlt noch." },
+  { label: "Basement floor broken", persona: "site-manager", text: "Im Keller ist der Boden an der Treppe gebrochen. Erst in drei Monaten erneut ansprechen, vorher nichts tun." },
 ];
+
+// Contacts directory: the site team plus external parties. Subcontractor foremen do NOT use the app in
+// reality, so messages to them are prepared as WhatsApp / SMS / email drafts. Phone numbers are fictional.
+export const CONTACTS: Contact[] = [
+  { id: "site-manager", name: "Max Bauer", role: "Site manager (Bauleiter)", company: "Hauptbau GmbH", email: "m.bauer@hauptbau.example", usesApp: true },
+  { id: "earthworks", name: "Jonas Huber", role: "Foreman, Earthworks", company: "Erdbau Huber GmbH", team: "earthworks", phone: "+4915100000001", email: "j.huber@erdbau-huber.example", usesApp: false },
+  { id: "formwork", name: "Lena Weber", role: "Foreman, Formwork", company: "Schalungsbau Weber GmbH", team: "formwork", phone: "+4915100000002", email: "l.weber@schalungsbau-weber.example", usesApp: false },
+  { id: "rebar", name: "Mehmet Kaya", role: "Foreman, Rebar", company: "Bewehrung Kraus GmbH", team: "rebar", phone: "+4915100000003", email: "m.kaya@bewehrung-kraus.example", usesApp: false },
+  { id: "concrete", name: "Piotr Nowak", role: "Foreman, Concrete", company: "Betonbau Schmid GmbH", team: "concrete", phone: "+4915100000004", email: "p.nowak@betonbau-schmid.example", usesApp: false },
+  { id: "client", name: "Dr. Sabine Roth", role: "Client representative (Bauherr)", company: "Lindenhof Wohnbau GmbH & Co. KG", email: "s.roth@lindenhof-wohnbau.example", usesApp: false },
+  { id: "supplier", name: "Stahlhandel Müller", role: "Steel supplier", company: "Stahlhandel Müller GmbH", phone: "+4915100000005", email: "dispo@stahl-mueller.example", usesApp: false },
+  { id: "claims", name: "Thomas Lang", role: "Claims manager (Nachtragsmanager)", company: "Hauptbau GmbH", email: "t.lang@hauptbau.example", usesApp: true },
+  { id: "planning", name: "Arbeitsvorbereitung", role: "Planning department", company: "Hauptbau GmbH", email: "av@hauptbau.example", usesApp: true },
+];
+
+// Documents loaded when the site was initialised (shown on the Setup screen).
+export const SITE_DOCUMENTS: { name: string; kind: string; pages?: number; note: string }[] = [
+  { name: "Bauzeitenplan_Haus2_KW48-49.xlsx", kind: "Schedule", note: "Imported → 14 tasks, 4 teams, 2 milestones" },
+  { name: "Lageplan_und_Grundrisse_Haus2.pdf", kind: "Site map / plans", pages: 38, note: "Sections A–C, floors basement–3" },
+  { name: "Bauvertrag_VOB-B_Hauptbau.pdf", kind: "Contract", pages: 64, note: "Contract basis VOB/B, notice periods" },
+  { name: "Baubeschreibung_Haus2.pdf", kind: "Specification", pages: 112, note: "Materials, e.g. rebar Ø 16 mm in foundations" },
+  { name: "Protokoll_Baubesprechung_17-11.pdf", kind: "Meeting minutes", pages: 6, note: "Open items carried over" },
+  { name: "Nachunternehmerliste.xlsx", kind: "Contacts", note: "Subcontractors, foremen, phone numbers" },
+];
+
+export const SAMPLE_MINUTES = `Baubesprechung 24.11.2026, Haus 2 – Teilnehmer: Bauherr (Dr. Roth), Hauptbau (Bauer), Schalungsbau Weber, Bewehrung Kraus
+1. Bauherr liefert die überarbeiteten Deckenpläne (Treppenhausöffnung) bis Donnerstag.
+2. Schalungsbau Weber stellt für Abschnitt B eine zusätzliche Kolonne ab Mittwoch.
+3. Bewehrung Kraus: Stahllieferung für Abschnitt C muss bis Donnerstag bestätigt werden, Herr Kaya klärt mit Stahlhandel Müller.
+4. Kranbelegung Donnerstag: Betonage hat Vorrang vor Schalung, Bauleitung stimmt mit Weber ab.
+5. Nächste Baubesprechung: Dienstag, 01.12.2026.`;

@@ -13,6 +13,7 @@ and **drafts every notice and report** (VOB/B). The site manager approves re-pla
 | Area | What works |
 | --- | --- |
 | Capture | Voice dictation in German or English (browser speech API, Chrome/Edge/Safari), typing, photos, demo phrases |
+| Log format | Timestamp, author, photos, **location**, **current state**, **next steps** (to-do / inform / contact / remind, who, by when). The speaker's own instruction ("in drei Monaten erneut ansprechen") wins over AI suggestions. |
 | Extraction | Note → structured diary entry (type, task, cause, responsible party, time, delay) with a small open-source LLM (Ollama, Groq …), Claude, or a rule-based fallback. Asks one follow-up question for missing facts. |
 | Photo understanding | A small open vision model (Qwen3-VL) describes each photo: caption, visible findings, text in the image. A photo alone can start a note. |
 | Shared plan | Two-week Gantt for 4 subcontractor teams, readiness checklists, milestones, forward-pass scheduling |
@@ -20,7 +21,12 @@ and **drafts every notice and report** (VOB/B). The site manager approves re-pla
 | Preventive | Daily scan of tasks starting in the next 5 working days, top 3 blockers ranked by due date and milestone criticality, draft request letters, mark cleared |
 | Reactive | Stoppage → knock-on effect → re-plan proposal (add crew to recover milestone slip, pull unblocked work forward to avoid idle crews), explained in plain words, approve/reject |
 | Documents | VOB/B drafts: Behinderungsanzeige (§ 6 Abs. 1), Mängelanzeige (§ 4 Abs. 7) / Mängelrüge, Mehrkostenanzeige (§ 2 Abs. 5/6), Bedenkenanzeige (§ 4 Abs. 3), Anforderung von Unterlagen (§ 3 Abs. 1), daily report. Edit, approve, export PDF and Word. |
-| Audit trail | Site diary, decision log (preventive / reactive / change), change log with who was notified |
+| Plan changes from logs | A delay reported in a log becomes a proposed change; the site manager sees the consequence and accepts or rejects. Foremen's direct task edits stay immediate. |
+| Today so far | Site manager's Home: logs, problems, what waits for him, milestones at risk, due to-dos, AI summary on demand, daily report |
+| Messages to send | Subs, client and suppliers don't use the app: personalised German WhatsApp / SMS / email drafts (action vs FYI), sent from the site manager's phone |
+| Setup | Initialise a site: project data, schedule import from MS Project / Excel (.xlsx, .csv), documents, contacts |
+| Meeting minutes | Paste minutes → one log per agenda item with owner and due date |
+| Audit trail | Logs view with search and filters, decision log (preventive / reactive / change), change log with who was notified |
 | KPIs | Preventive vs reactive decisions today, milestone status |
 
 ## Demo script (≈ 5 min)
@@ -30,7 +36,11 @@ and **drafts every notice and report** (VOB/B). The site manager approves re-pla
 3. **Re-plan.** See the proposal: without action the foundation milestone slips 1 day; with the re-plan it holds and ≈72 idle crew-hours are avoided. **Approve**.
 4. **Notice.** *Draft obstruction notice* → edit → **Approve** → **PDF / Word**.
 5. **11:00 – Change control.** Switch to *Lena Weber (formwork)* → My tasks → *Formwork slab floor 2 A* → +1 day → reason → *Apply*. Switch to *Mehmet Kaya (rebar)*: he is notified, and the milestone warning shows.
-6. **17:00 – Report.** Back as site manager → Documents → **+ Daily report** → export.
+6. **11:30 – Call from a sub.** As site manager: **Rebar 2 days late** → Structure → Save. Accept the proposed change in “Today so far”.
+7. **Messages.** *Messages to send* → action for rebar/earthworks, FYI for formwork/concrete → send one via WhatsApp.
+8. **Instruction wins.** **Basement floor broken** → only a reminder in three months.
+9. **Minutes.** Project → Logs → *Import meeting minutes* → sample → save.
+10. **17:00 – Report.** Home → *Summarise my day* → *Generate daily report* → export.
 
 Use **Reset demo** in the header to start again.
 
@@ -70,14 +80,19 @@ src/
     page.tsx              UI shell: persona switch, tabs
     api/extract/route.ts  note (+ photo notes) → structured entry (open LLM / Claude / rules)
     api/vision/route.ts   photo → caption and findings (open VLM)
+    api/minutes/route.ts  meeting minutes → log items with next steps
+    api/summary/route.ts  "today so far" summary
     api/status/route.ts   which AI engine is active
-  components/             Today, Capture, Replan, Plan (Gantt), TaskEditor, Diary, Documents
+  components/             Today, DailySummary, Capture, Replan, Plan (Gantt), TaskEditor, Logs, MinutesImport, Outbox, Setup, Documents
   lib/
     ai.ts                 OpenAI-compatible client for open models, JSON parsing, photo analysis
     seed.ts               synthetic site: teams, personas, 14 tasks, milestones, settings
     engine.ts             scheduling, impact, preventive scan, re-plan heuristic
     extract-rules.ts      offline keyword extractor (DE/EN)
     templates.ts          VOB/B notice and daily report templates
+    messages.ts           ready-to-send messages for people without the app
+    minutes.ts            meeting-minutes splitter (rules)
+    schedule-import.ts    MS Project / Excel schedule import
     export.ts             PDF (jsPDF) and Word (docx) export
     store.ts              app state (zustand, persisted in localStorage)
     useSpeech.ts          browser speech-to-text
@@ -94,5 +109,5 @@ src/
 1. Shared database (e.g. Vercel Postgres / Supabase) + login and roles, so every foreman uses their own phone.
 2. Real notifications (push / email).
 3. Whisper (open source) for speech-to-text, offline capture.
-4. Plan import from Excel / MS Project; claims evidence pack for the claims manager.
+4. WhatsApp Business API (send and read replies), native .mpp import, contract parsing; claims evidence pack for the claims manager.
 5. Constraint solver (OR-Tools) for larger plans; templates reviewed by a construction lawyer.

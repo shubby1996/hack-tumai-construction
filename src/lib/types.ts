@@ -85,6 +85,67 @@ export interface EntryFields {
   [key: string]: string | number | undefined;
 }
 
+// ---- New unified log format (alongside the older type/fields) ----
+
+export type NextStepKind = "task" | "notify" | "contact" | "remind" | "other";
+
+export interface NextStep {
+  id: string;
+  kind: NextStepKind;
+  text: string; // what should happen
+  who?: string; // contact id (persona id or external contact id)
+  dueDay?: number; // working-day index
+  source: "ai" | "user" | "rules"; // user = stated by the speaker (overrides AI)
+}
+
+export interface Contact {
+  id: string; // persona ids for the team, plus external contacts
+  name: string;
+  role: string;
+  company: string;
+  phone?: string; // for WhatsApp / SMS
+  email?: string;
+  team?: TeamId;
+  usesApp: boolean; // subcontractors do not use the app in reality
+}
+
+export interface Todo {
+  id: string;
+  createdAt: string;
+  text: string;
+  owner?: string; // contact id
+  dueDay?: number;
+  entryId?: string;
+  kind: "task" | "remind" | "other";
+  status: "open" | "done";
+}
+
+export interface OutMessage {
+  id: string;
+  createdAt: string;
+  to: string; // contact id
+  subject: string;
+  body: string;
+  purpose: "action" | "fyi";
+  entryId?: string;
+  status: "draft" | "sent";
+  sentAt?: string;
+  channel?: "whatsapp" | "sms" | "email" | "copy";
+}
+
+export interface ProposedChange {
+  id: string;
+  createdAt: string;
+  entryId: string;
+  taskId: string;
+  days: number; // delay in working days
+  mode: "shift" | "extend"; // shift start (not started yet) or extend duration (already running)
+  reason: string;
+  reportedBy: PersonaId;
+  status: "pending" | "accepted" | "rejected";
+  decidedAt?: string;
+}
+
 export interface DiaryEntry {
   id: string;
   createdAt: string; // ISO timestamp
@@ -96,6 +157,11 @@ export interface DiaryEntry {
   fields: EntryFields;
   photos: string[]; // data URLs (downscaled)
   photoNotes?: string[]; // what the vision model saw on each photo
+  // unified log format
+  location?: string;
+  state?: string; // current state, one or two sentences
+  nextSteps?: NextStep[];
+  source?: "voice" | "text" | "photo" | "minutes";
   engine: "open" | "claude" | "rules";
   model?: string;
 }

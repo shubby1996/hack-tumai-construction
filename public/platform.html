@@ -44,7 +44,7 @@
     <div class="logo">S</div>
     <div>
       <h1>SiteFlow – Platform Explanation</h1>
-      <p>Tum.ai Construction Hack · Challenge B · last updated 20 Nov 2026 (open-source AI) · <span id="ver">v0.4</span></p>
+      <p>Tum.ai Construction Hack · Challenge B · last updated 21 Nov 2026 (site manager workflow) · <span id="ver">v0.5</span></p>
     </div>
   </div>
 </header>
@@ -155,17 +155,20 @@
 
   <section id="features">
     <h2>5. Features by screen</h2>
-    <p>The interface follows familiar work-management patterns: a dark left sidebar, a project with List, Board and Timeline views, round completion checkboxes, assignee avatars, and a task detail panel that slides in from the right. On phones the sidebar becomes a slide-in menu and a bottom tab bar (Home, My tasks, Inbox, Project) appears.</p>
+    <p>The interface follows familiar work-management patterns: a dark left sidebar, a project with List, Board and Timeline views, round completion checkboxes, assignee avatars, and a task detail panel that slides in from the right. On phones the sidebar becomes a slide-in menu and a bottom tab bar (Home, My tasks, Inbox, Send, Project) appears.</p>
     <h3>Sidebar</h3>
     <ul>
-      <li><strong>Create note</strong>, <strong>Home</strong>, <strong>My tasks</strong> (site manager: all open tasks), <strong>Inbox</strong> with unread count.</li>
-      <li><strong>Projects:</strong> the site (Wohnanlage Lindenhof, Haus 2) with List, Board, Timeline, Diary and Documents.</li>
+      <li><strong>Create note</strong>, <strong>Home</strong>, <strong>My tasks</strong> (site manager: all open tasks), <strong>Inbox</strong> with unread count, and for the site manager <strong>Messages to send</strong> with the number of drafts.</li>
+      <li><strong>Projects:</strong> the site (Wohnanlage Lindenhof, Haus 2) with List, Board, Timeline, Logs, Documents and Setup.</li>
       <li>At the bottom: <strong>Acting as</strong> persona switch with avatar, active AI models, "Open on phone" (QR code), "How it works" and "Reset demo".</li>
     </ul>
     <h3>Home</h3>
     <ul>
       <li>Greeting with the demo date.</li>
+      <li><strong>Today so far</strong> (site manager only): number of logs and authors, problems, items waiting for him, milestones at risk; <strong>plan changes reported</strong> with the consequence preview and Accept / Reject; buttons to the draft notices and messages waiting; to-dos due today and tomorrow; latest logs; <strong>Summarise my day</strong> (open model, on demand) and <strong>Generate daily report</strong>.</li>
       <li><strong>Capture a site situation:</strong> voice (German or English), text, camera or gallery photos, demo phrases. Photos are described by the vision model; the note comes back as a structured entry with one follow-up question for missing facts.</li>
+      <li><strong>Log format:</strong> every log has a timestamp, author, photos, <strong>location</strong> (building, floor, room, section), <strong>current state</strong> and <strong>next steps</strong>. Each next step has a kind (to-do, inform, contact, remind me, other), a person from the contacts list and a due date, all editable. If the speaker says what should happen ("erst in drei Monaten erneut ansprechen, vorher nichts tun"), that instruction wins over the AI's suggestions and is marked "your instruction". The older classification (type, task, cause, responsible party, delay …) sits below in a collapsible section and still drives notices and the re-plan.</li>
+      <li>If a log reports a delay on a task (not a stoppage), it becomes a <strong>proposed plan change</strong> for the site manager instead of moving the Gantt directly. Foremen changing their own task in the task panel still apply immediately.</li>
       <li><strong>Re-plan proposal</strong> after a stoppage (shown first and scrolled into view), then <strong>suggested next steps</strong> with the matching notice.</li>
       <li><strong>My tasks</strong> (site manager: "On site now and next"), <strong>Blockers to clear</strong> (preventive, top 3 in the next 5 working days) and <strong>Today at a glance</strong> (preventive vs reactive decisions, milestone status).</li>
     </ul>
@@ -174,13 +177,19 @@
       <li><strong>List:</strong> sections per subcontractor team (collapsible), rows with completion checkbox, assignee avatar, due date (red when late or blocked), status and readiness.</li>
       <li><strong>Board:</strong> columns Planned, In progress, Blocked, Done. Drag cards between columns on desktop, or use the card menu on phones. Cards show team tag, open readiness items, delay, assignee and due date.</li>
       <li><strong>Timeline:</strong> two-week Gantt (Mon 23 Nov – Fri 4 Dec 2026) with milestones, delays striped and blocked tasks outlined.</li>
-      <li><strong>Diary:</strong> site diary with transcripts, photo descriptions and photos; decision log; change log (audit trail).</li>
+      <li><strong>Logs:</strong> all logs from everyone, newest first, with search (text, location, task) and filters (day, author, type, open steps only). Each card shows location, state, next steps, photos, the original words and the extraction model. <strong>Import meeting minutes</strong> splits pasted minutes into one log per agenda item with who / what / by when (open model, rule-based fallback); untick what you don't want and save. Decision log and change log (audit trail) sit alongside.</li>
       <li><strong>Documents:</strong> drafts and approved documents, editor, approve (site manager only), PDF and Word export, daily report.</li>
+      <li><strong>Setup:</strong> how a site is initialised before work starts. Project data; <strong>schedule import</strong> from an MS Project or Excel export (.xlsx or .csv; columns ID, Name, Team, Section, Start, Duration, Crew, Predecessors, Milestone; German or English headers) with a preview, warnings and "Use this plan"; a template download of the current plan; the site documents (listed, not yet parsed); and the <strong>people</strong> with phone, email and whether they use the app.</li>
     </ul>
     <h3>Task detail panel</h3>
     <ul>
       <li>Opens from any task (List, Board, Timeline, Home). Shows assignee, dates, status, team and section, crew, dependencies, milestone and readiness, plus recent activity.</li>
       <li><strong>Mark complete</strong>, clear readiness items, and change planned start, duration or status with a live impact preview ("moves R3, C4 … notifies … milestone slips"). Every change is logged and notifies the affected people.</li>
+    </ul>
+    <h3>Messages to send</h3>
+    <ul>
+      <li>Subcontractors, the client and suppliers don't use the app. When a log, an accepted plan change or an approved re-plan affects them, SiteFlow prepares a personal German message: <strong>action needed</strong> for whoever has to do something, <strong>FYI</strong> for teams whose dates only shift. The site manager checks or edits the text and sends it with <strong>WhatsApp</strong>, <strong>SMS</strong> or <strong>Email</strong> (opens the app on his phone with the text filled in) or <strong>Copy</strong>; the message is then marked as sent.</li>
+      <li>People who use the app (claims manager, planning) get a to-do instead. Foreman profiles stay in the demo to show a possible future subcontractor view.</li>
     </ul>
     <h3>Inbox</h3>
     <ul>
@@ -257,7 +266,7 @@
     <table>
       <tr><th>Layer</th><th>Technology</th><th>Where in the code</th></tr>
       <tr><td>Web app and hosting</td><td>Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, hosted on Vercel</td><td><code>src/app/page.tsx</code>, <code>src/components/*</code></td></tr>
-      <tr><td>API</td><td>Next.js route handlers: <code>POST /api/extract</code> (note → entry), <code>POST /api/vision</code> (photo → caption and findings), <code>GET /api/status</code> (active engine and models)</td><td><code>src/app/api/*</code></td></tr>
+      <tr><td>API</td><td>Next.js route handlers: <code>POST /api/extract</code> (note → entry), <code>POST /api/vision</code> (photo → caption and findings), <code>POST /api/minutes</code> (minutes → log items), <code>POST /api/summary</code> (today so far), <code>GET /api/status</code> (active engine and models)</td><td><code>src/app/api/*</code></td></tr>
       <tr><td>AI models</td><td>Small open-source LLM and VLM (default Qwen3-VL 4B) through any OpenAI-compatible endpoint; optional Claude; rule-based fallback</td><td><code>src/lib/ai.ts</code>, <code>src/app/api/extract/route.ts</code>, <code>src/app/api/vision/route.ts</code>, <code>src/lib/extract-rules.ts</code></td></tr>
       <tr><td>Speech-to-text</td><td>Browser Web Speech API (de-DE, en-US)</td><td><code>src/lib/useSpeech.ts</code></td></tr>
       <tr><td>Plan engine</td><td>Plain TypeScript: scheduling, impact, preventive scan, re-plan</td><td><code>src/lib/engine.ts</code></td></tr>
@@ -269,7 +278,8 @@
     <ul>
       <li><strong>Task:</strong> id, name, team, section, planned start, duration, crew, predecessors, milestone, status, delay days, minimum duration, readiness checklist.</li>
       <li><strong>Readiness item:</strong> open or cleared, note, owner, due day.</li>
-      <li><strong>Diary entry:</strong> time, day, author, type, transcript, summary, fields (task, cause, responsible party, start time, expected delay, material, quantity, location…), photos, photo descriptions, extraction engine and model.</li>
+      <li><strong>Diary entry:</strong> time, day, author, type, transcript, summary, fields (task, cause, responsible party, start time, expected delay, material, quantity, location…), photos, photo descriptions, location, current state, next steps, source (voice, text, photo, minutes), extraction engine and model.</li>
+      <li><strong>To-do, message, proposed change, contact:</strong> next steps become to-dos (site team) or message drafts (people without the app); reported delays become proposed changes with status pending / accepted / rejected; contacts carry phone, email and "uses the app".</li>
       <li><strong>Notice:</strong> type, title, addressee, body, references, status (draft / approved), mode (preventive / reactive / report).</li>
       <li><strong>Change record:</strong> who, task, before, after, reason, tasks moved, who was notified.</li>
       <li><strong>Decision:</strong> preventive, reactive or change, with text and time.</li>
@@ -283,11 +293,16 @@
     <p>The demo is one simulated day, Tuesday 24 Nov 2026, and takes about 5 minutes. Press "Reset demo" first.</p>
     <ol>
       <li><strong>07:00, preventive.</strong> As Max Bauer (site manager), open Today. "Blockers to clear" shows three items: crane double-booked Thursday, slab drawings missing from the client, steel for section C unconfirmed. Click <strong>Draft request</strong> on the drawings, review it in Documents and <strong>Approve</strong>.</li>
-      <li><strong>10:00, reactive.</strong> Click the demo phrase <strong>Excavator idle (DE)</strong>, then <strong>Structure note</strong>. Answer the follow-up with <strong>1 day</strong> and <strong>Save to site diary</strong>.</li>
+      <li><strong>10:00, reactive.</strong> Click the demo phrase <strong>Excavator idle (DE)</strong>, then <strong>Structure note</strong>. Check location and next steps (contact the client, inform earthworks), answer the follow-up with <strong>1 day</strong> and <strong>Save log</strong>.</li>
       <li><strong>Re-plan.</strong> The proposal shows a 1-day slip on the foundation milestone without action, "milestones hold" with the re-plan, and about 72 idle crew-hours avoided. <strong>Approve re-plan.</strong></li>
       <li><strong>Notice.</strong> Click <strong>Draft obstruction notice</strong>, edit a sentence, <strong>Approve</strong>, then <strong>PDF</strong> and <strong>Word</strong>.</li>
       <li><strong>11:00, change control.</strong> Switch to Lena Weber (formwork). Under My tasks, open "Formwork slab floor 2 A", press <strong>+1 day</strong>, enter a reason and <strong>Apply change &amp; notify</strong>. Switch to Mehmet Kaya (rebar): he has a notification that his task moved and that the floor 2 milestone now slips 1 day.</li>
-      <li><strong>17:00, report.</strong> Switch back to the site manager, open Documents, click <strong>+ Daily report</strong> and export it.</li>
+      <li><strong>11:30, a call from a sub.</strong> As site manager, click <strong>Rebar 2 days late</strong> → Structure note → Save log. "Today so far" shows the proposed change with its consequence (the slab pour moves, the floor 2 milestone slips 2 days). <strong>Accept change.</strong></li>
+      <li><strong>Messages.</strong> Open <strong>Messages to send</strong>: action messages for earthworks and rebar, FYI for formwork and concrete, a request to the client. Send one via WhatsApp.</li>
+      <li><strong>Your instruction wins.</strong> Click <strong>Basement floor broken</strong> → Structure note: one reminder in three months, marked "your instruction", no other actions.</li>
+      <li><strong>Minutes.</strong> Project → Logs → <strong>Import meeting minutes</strong> → Use sample minutes → Split into logs → Save. Five logs with owners and due dates appear.</li>
+      <li><strong>Setup.</strong> Project → Setup shows how the site was initialised; download the template and upload it again to see the import.</li>
+      <li><strong>17:00, report.</strong> Home → <strong>Summarise my day</strong>, then <strong>Generate daily report</strong> and export it.</li>
     </ol>
     <p><strong>In one line:</strong> one shared two-week plan for the whole site. The assistant clears blockers before they bite, re-plans in seconds when they do, and writes every notice and report along the way. The site manager just approves.</p>
   </section>
@@ -330,14 +345,16 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
       <li>Notifications appear in the app only (no push or email).</li>
       <li>Voice input depends on the browser's speech recognition and does not work in Firefox.</li>
       <li>Small open models (2–4B) make more extraction mistakes than large ones; the review step and the rule-based fallback cover this. The open-model path was tested against a stand-in server, not yet against a real Qwen3-VL instance.</li>
-      <li>The plan is a fixed synthetic two-week plan (14 tasks); there is no import from Excel or MS Project yet.</li>
+      <li>Schedule import reads .xlsx/.csv exports only (no native .mpp files), and readiness items start as cleared. Site documents are listed, not parsed.</li>
+      <li>Messages open WhatsApp / SMS / email on the device; SiteFlow does not send them itself and cannot see replies.</li>
+      <li>Offline capture, noisy sites and location from GPS are not handled yet.</li>
       <li>The re-plan heuristic does not model crew capacity limits per team, so a pulled-forward task can overlap another task of the same team.</li>
       <li>Legal references in the templates have not been reviewed by a construction lawyer.</li>
     </ul>
     <h3>Roadmap</h3>
     <table>
       <tr><th>Stage</th><th>Goal</th><th>Main additions</th></tr>
-      <tr><td>Pilot-ready</td><td>One real site, one contractor</td><td>Shared database (e.g. Vercel Postgres or Supabase), login and roles, push and email notifications, plan import from Excel / MS Project, lawyer-reviewed VOB/B templates, EU hosting and GDPR basics</td></tr>
+      <tr><td>Pilot-ready</td><td>One real site, one contractor</td><td>Shared database (e.g. Vercel Postgres or Supabase), login and roles, push and email notifications, WhatsApp Business API with replies, native MS Project import, document parsing (contract notice periods), lawyer-reviewed VOB/B templates, EU hosting and GDPR basics</td></tr>
       <tr><td>Product v1</td><td>Several sites per contractor</td><td>Claims manager view with evidence packs, defect management, offline capture, open Whisper speech-to-text, constraint solver (OR-Tools) for larger plans, photo checks against reported progress</td></tr>
       <tr><td>Scale</td><td>Learn across projects</td><td>Analytics on recurring blockers and late trades, preventive alerts that learn from history, client portal, ERP / document / scheduling integrations</td></tr>
     </table>
@@ -349,6 +366,7 @@ npm run check:engine # prints the engine's results for the demo scenario</code><
     <p>Add a row whenever the platform or this document changes. Newest first.</p>
     <table>
       <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+      <tr><td>21 Nov 2026</td><td>v0.5</td><td>From the team's site-manager interview: new log format (location, current state, next steps with who and when; the speaker's instruction wins); delays from logs become proposed plan changes the site manager accepts; "Today so far" summary on Home with AI summary (<code>/api/summary</code>); Logs view with filters replaces Diary; Messages to send (WhatsApp / SMS / email drafts for subs who don't use the app); Setup screen with schedule import (.xlsx / .csv) and contacts; meeting-minutes import (<code>/api/minutes</code>); daily report lists locations and agreed next steps</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.4</td><td>Work-management style UI: dark sidebar, project with List / Board (drag and drop) / Timeline views, task detail panel, Inbox with authors, completion checkboxes and avatars, greeting on Home, coral accent</td></tr>
       <tr><td>21 Nov 2026</td><td>v0.3</td><td>Mobile-friendly: bottom tab bar on phones, larger touch targets, 16 px inputs (no iOS zoom), camera and gallery photo buttons, list view of the plan on phones, re-plan scrolls into view, "Open on phone" QR code, installable to the home screen. Live app switched to Groq (llama-3.1-8b-instant + qwen/qwen3.8-27b)</td></tr>
       <tr><td>20 Nov 2026</td><td>v0.2</td><td>Open-source AI: any OpenAI-compatible endpoint (Ollama, Groq …), default Qwen3-VL 4B for notes and photos; photo understanding (<code>/api/vision</code>) feeding notes and notices; Claude now optional</td></tr>

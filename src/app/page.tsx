@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
-import { PERSONAS, PROJECT } from "@/lib/seed";
+import { PERSONAS } from "@/lib/seed";
 import type { PersonaId } from "@/lib/types";
 import { Today } from "@/components/Today";
 import { Timeline } from "@/components/Plan";
@@ -10,20 +10,23 @@ import { TaskList } from "@/components/TaskList";
 import { Board } from "@/components/Board";
 import { TaskDrawer } from "@/components/TaskDrawer";
 import { Inbox } from "@/components/Inbox";
-import { Diary } from "@/components/Diary";
+import { Logs } from "@/components/Logs";
+import { Outbox } from "@/components/Outbox";
+import { Setup } from "@/components/Setup";
 import { Documents } from "@/components/Documents";
 import { PhoneQr } from "@/components/PhoneQr";
 import { Avatar } from "@/components/ui";
 
-type View = "home" | "mytasks" | "inbox" | "project";
-type ProjTab = "list" | "board" | "timeline" | "diary" | "docs";
+type View = "home" | "mytasks" | "inbox" | "outbox" | "project";
+type ProjTab = "list" | "board" | "timeline" | "logs" | "docs" | "setup";
 
 const PROJ_TABS: { id: ProjTab; label: string }[] = [
   { id: "list", label: "List" },
   { id: "board", label: "Board" },
   { id: "timeline", label: "Timeline" },
-  { id: "diary", label: "Diary" },
+  { id: "logs", label: "Logs" },
   { id: "docs", label: "Documents" },
+  { id: "setup", label: "Setup" },
 ];
 
 export default function Home() {
@@ -35,7 +38,7 @@ export default function Home() {
   const [msg, setMsg] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
   const [engine, setEngine] = useState<{ extraction: string; model?: string | null; vision?: string | null }>({ extraction: "…" });
-  const { persona, notices, notifications } = useStore();
+  const { persona, notices, notifications, messages, project: PROJECT } = useStore();
   const setPersona = useStore((s) => s.setPersona);
   const reset = useStore((s) => s.reset);
 
@@ -65,6 +68,7 @@ export default function Home() {
   const me = PERSONAS.find((p) => p.id === persona)!;
   const unread = notifications.filter((n) => n.to.includes(persona) && !n.readBy.includes(persona)).length;
   const drafts = notices.filter((n) => n.status === "draft").length;
+  const toSend = messages.filter((m) => m.status === "draft").length;
   const isSM = persona === "site-manager";
   const engineLabel =
     engine.extraction === "open"
@@ -75,7 +79,7 @@ export default function Home() {
           ? "rule-based (no model configured)"
           : "…";
 
-  const title = view === "home" ? "Home" : view === "mytasks" ? "My tasks" : view === "inbox" ? "Inbox" : PROJECT.name;
+  const title = view === "home" ? "Home" : view === "mytasks" ? "My tasks" : view === "inbox" ? "Inbox" : view === "outbox" ? "Messages to send" : PROJECT.name;
 
   const sidebar = (
     <nav className="flex h-full flex-col bg-[#1e1f21] text-[#f5f4f3]">
@@ -93,6 +97,7 @@ export default function Home() {
         <SideItem icon="🏠" label="Home" active={view === "home"} onClick={() => go("home")} />
         <SideItem icon="✔︎" label={isSM ? "All open tasks" : "My tasks"} active={view === "mytasks"} onClick={() => go("mytasks")} />
         <SideItem icon="🔔" label="Inbox" count={unread} active={view === "inbox"} onClick={() => go("inbox")} />
+        {isSM && <SideItem icon="✉" label="Messages to send" count={toSend} active={view === "outbox"} onClick={() => go("outbox")} />}
       </div>
       <div className="mt-5 px-3">
         <p className="px-2 pb-1 text-xs font-medium text-[#a2a0a2]">Projects</p>
@@ -186,22 +191,25 @@ export default function Home() {
       </header>
 
       <main className="mx-auto max-w-6xl px-3 pb-24 pt-5 sm:px-6 lg:pb-10">
-        {view === "home" && <Today goDocs={() => go("project", "docs")} toast={toast} onOpen={setOpenTask} />}
+        {view === "home" && <Today goDocs={() => go("project", "docs")} goOutbox={() => go("outbox")} goLogs={() => go("project", "logs")} toast={toast} onOpen={setOpenTask} />}
+        {view === "outbox" && <Outbox toast={toast} />}
         {view === "mytasks" && <TaskList onOpen={setOpenTask} only={isSM ? undefined : persona} />}
         {view === "inbox" && <Inbox />}
         {view === "project" && projTab === "list" && <TaskList onOpen={setOpenTask} />}
         {view === "project" && projTab === "board" && <Board onOpen={setOpenTask} />}
         {view === "project" && projTab === "timeline" && <Timeline onOpen={setOpenTask} />}
-        {view === "project" && projTab === "diary" && <Diary />}
+        {view === "project" && projTab === "logs" && <Logs toast={toast} />}
+        {view === "project" && projTab === "setup" && <Setup toast={toast} />}
         {view === "project" && projTab === "docs" && <Documents toast={toast} />}
         <p className="mt-10 text-center text-xs text-[#9ca0a5]">Prototype · synthetic data · drafts are a drafting aid, not legal advice – the site manager reviews everything before sending.</p>
       </main>
 
       {/* Bottom tab bar on phones */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-[#e8e6e3] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav className={`fixed inset-x-0 bottom-0 z-20 grid ${isSM ? "grid-cols-5" : "grid-cols-4"} border-t border-[#e8e6e3] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden`}>
         <BottomTab icon="🏠" label="Home" active={view === "home"} onClick={() => go("home")} />
         <BottomTab icon="✔︎" label="My tasks" active={view === "mytasks"} onClick={() => go("mytasks")} />
         <BottomTab icon="🔔" label="Inbox" count={unread} active={view === "inbox"} onClick={() => go("inbox")} />
+        {isSM && <BottomTab icon="✉" label="Send" count={toSend || undefined} active={view === "outbox"} onClick={() => go("outbox")} />}
         <BottomTab icon="🏗" label="Project" count={drafts || undefined} active={view === "project"} onClick={() => go("project", projTab)} />
       </nav>
 

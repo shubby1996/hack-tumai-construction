@@ -8,11 +8,12 @@ import { PERSONAS } from "@/lib/seed";
 import { draftAnforderung, draftBedenken, draftBehinderung, draftMaengel, draftMehrkosten } from "@/lib/templates";
 import type { DiaryEntry, Notice } from "@/lib/types";
 import { Capture } from "./Capture";
+import { DailySummary } from "./DailySummary";
 import { ReplanPanel } from "./Replan";
 import { canEdit, statusTone } from "./TaskEditor";
 import { Avatar, Badge, Button, Card, CheckCircle } from "./ui";
 
-export function Today({ goDocs, toast, onOpen }: { goDocs: () => void; toast: (m: string) => void; onOpen: (id: string) => void }) {
+export function Today({ goDocs, goOutbox, goLogs, toast, onOpen }: { goDocs: () => void; goOutbox: () => void; goLogs: () => void; toast: (m: string) => void; onOpen: (id: string) => void }) {
   const [last, setLast] = useState<DiaryEntry | null>(null);
   const { persona, today } = useStore();
   const startReplan = useStore((s) => s.startReplan);
@@ -28,13 +29,28 @@ export function Today({ goDocs, toast, onOpen }: { goDocs: () => void; toast: (m
           {greet}, {me.name.split(" ")[0]}
         </h1>
       </div>
+      {persona === "site-manager" && (
+        <div className="mb-4">
+          <DailySummary goDocs={goDocs} goOutbox={goOutbox} goLogs={goLogs} toast={toast} />
+        </div>
+      )}
     <div className="grid gap-4 lg:grid-cols-5">
       <div className="space-y-4 lg:col-span-3">
         <Capture
           onSaved={(e) => {
             setLast(e);
             if (e.type === "stoppage" && e.fields.taskId) startReplan(e.id);
-            toast("Saved to the site diary");
+            const delay = Number(e.fields.estimatedDelayDays ?? 0);
+            const ext = useStore.getState().messages.filter((m) => m.entryId === e.id).length;
+            toast(
+              e.type !== "stoppage" && e.fields.taskId && delay > 0
+                ? persona === "site-manager"
+                  ? "Log saved – plan change waiting for your decision above"
+                  : "Log saved – plan change sent to the site manager"
+                : ext
+                  ? `Log saved – ${ext} message(s) ready to send`
+                  : "Log saved"
+            );
           }}
         />
         <ReplanPanel />

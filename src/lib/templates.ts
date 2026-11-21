@@ -3,7 +3,7 @@
 // Drafting aid, not legal advice: the site manager reviews every draft.
 
 import { dayDE, clock } from "./dates";
-import { PERSONAS, PROJECT, TEAMS } from "./seed";
+import { CONTACTS, PERSONAS, PROJECT, TEAMS } from "./seed";
 import type { Decision, DiaryEntry, Notice, NoticeType, Task } from "./types";
 import type { BlockerAlert, Impact } from "./engine";
 
@@ -197,7 +197,12 @@ export function draftTagesbericht(args: {
     ...byTeam.map(({ tm, list }) => `- ${tm.company}: ${list.reduce((s, t) => s + t.crew, 0)} Arbeitskräfte – ${list.map((t) => `${t.name} ${t.section}${t.status === "blocked" ? " (behindert)" : ""}`).join("; ")}`),
     ``,
     `2. Ereignisse (Bautagebuch)`,
-    ...(todays.length ? todays.map((e) => `- ${clock(e.createdAt)} ${e.summary}`) : ["- keine Einträge"]),
+    ...(todays.length ? todays.map((e) => `- ${clock(e.createdAt)} ${e.summary}${e.location ? ` (Ort: ${e.location})` : ""}${e.photos.length ? ` [${e.photos.length} Foto(s)]` : ""}`) : ["- keine Einträge"]),
+    ``,
+    `2a. Vereinbarte nächste Schritte`,
+    ...(todays.some((e) => e.nextSteps?.length)
+      ? todays.flatMap((e) => (e.nextSteps ?? []).map((st) => `- ${st.text}${st.who ? ` – ${CONTACTS.find((c) => c.id === st.who)?.name ?? st.who}` : ""}${st.dueDay !== undefined ? ` – bis ${dayDE(st.dueDay)}` : ""}`))
+      : ["- keine"]),
     ``,
     `3. Planänderungen und Entscheidungen`,
     ...(dec.length ? dec.map((d) => `- ${clock(d.createdAt)} [${d.kind === "preventive" ? "präventiv" : d.kind === "reactive" ? "reaktiv" : "Änderung"}] ${d.text}`) : ["- keine"]),

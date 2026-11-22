@@ -4,6 +4,10 @@ What runs today at [hack-tumai-construction.vercel.app](https://hack-tumai-const
 The plan logic runs in the browser; only the language work goes to the server, which calls open-source models.
 Synthetic demo data, no login, no database: each browser keeps its own state.
 
+![Cats Track on Vercel: deployment architecture](diagram/architecture.svg)
+
+The diagrams below show the same system in more detail. They are written in Mermaid, so GitHub draws them from the text.
+
 ## 1. System overview
 
 ```mermaid

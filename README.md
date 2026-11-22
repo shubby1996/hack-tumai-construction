@@ -9,6 +9,8 @@ and **drafts every notice and report** (VOB/B). The site manager approves re-pla
 
 > Prototype with synthetic data. Drafts are a drafting aid, not legal advice.
 
+🏗 **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): system overview, one note end to end, plan engine and data model as diagrams.
+
 📄 **Platform explanation:** [`public/platform.html`](public/platform.html), live at [hack-tumai-construction.vercel.app/platform.html](https://hack-tumai-construction.vercel.app/platform.html). Keep it updated with every change (see its changelog section).
 
 🏠 **Landing page:** [`public/landing/index.html`](public/landing/index.html), live at `/landing`, with a button to the live demo (`/`).
